@@ -10,6 +10,7 @@
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Échango</title>
+<script>try{var t=localStorage.getItem('ec-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap">
@@ -171,10 +172,38 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 
 #toast{position:absolute;left:16px;right:16px;bottom:calc(140px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;font-size:14px;text-align:center;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.show{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.spin{animation:none}}
+/* Écran de démarrage : l'étiquette se dessine, puis le nom apparaît. Il disparaît seul après 6 s au plus, même si le script échoue. */
+#splash{position:fixed;inset:0;z-index:100;display:grid;justify-items:center;align-content:center;gap:20px;background:var(--bg);transition:opacity .35s ease,visibility .35s;animation:spAuto .01s 6s forwards}
+#splash.out{opacity:0;visibility:hidden}
+#splash .sp-mark{width:112px;height:112px;overflow:visible;animation:spPop .5s cubic-bezier(.2,.9,.3,1.15) both}
+#splash .sp-a{stroke-dasharray:1 1;stroke-dashoffset:1;animation:spDraw .4s .25s ease-out forwards}
+#splash .sp-b{stroke-dasharray:1 1;stroke-dashoffset:1;animation:spDraw .3s .55s ease-out forwards}
+#splash .sp-dot{transform-box:fill-box;transform-origin:center;animation:spDot .4s .7s cubic-bezier(.2,.9,.3,1.7) both}
+#splash .logo{font-size:34px;animation:spUp .5s .35s ease-out both}
+#splash .sp-bar{width:96px;height:3px;border-radius:2px;background:var(--line);overflow:hidden;opacity:0;animation:spFade .3s .9s forwards}
+#splash .sp-bar::after{content:"";display:block;width:40%;height:100%;border-radius:2px;background:var(--brand);animation:spSlide 1s ease-in-out infinite}
+@keyframes spPop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes spDraw{to{stroke-dashoffset:0}}
+@keyframes spDot{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+@keyframes spUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spFade{to{opacity:1}}
+@keyframes spSlide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+@keyframes spAuto{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.spin{animation:none}
+  #splash{animation:spAuto .01s 6s forwards!important}#splash .sp-a,#splash .sp-b{stroke-dashoffset:0}#splash .sp-bar{opacity:1}#splash .sp-bar::after{width:100%}}
 </style>
 </head>
 <body>
+<div id="splash" role="status" aria-label="Chargement d’Échango">
+  <svg class="sp-mark" viewBox="0 0 120 120" aria-hidden="true">
+    <path d="M60 10l38 22v62a10 10 0 0 1-10 10H32a10 10 0 0 1-10-10V32z" style="fill:var(--sun)"/>
+    <circle class="sp-dot" cx="60" cy="36" r="7" fill="#4CC25A"/>
+    <path class="sp-a" pathLength="1" d="M46 90L74 62" fill="none" stroke-width="8" stroke-linecap="round" style="stroke:var(--sun-ink)"/>
+    <path class="sp-b" pathLength="1" d="M54 62h20v20" fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--sun-ink)"/>
+  </svg>
+  <span class="logo"><span class="w1">Échan</span><span class="w2">go</span></span>
+  <span class="sp-bar" aria-hidden="true"></span>
+</div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-shirt" viewBox="0 0 24 24"><path d="M9 3 4 5.5 6 10l2-1v11h8V9l2 1 2-4.5L15 3a3 3 0 0 1-6 0z"/></symbol>
 <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
@@ -328,8 +357,18 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     return rest('GET','/listings?select=id,seller_id,seller_name,title,category,condition,price,negotiable,description,area,photos,created_at&status=eq.active&order=created_at.desc&limit=100')
       .then(function(rows){S.listings=(Array.isArray(rows)?rows:[]).map(clean).filter(Boolean);})
       .catch(function(){S.loadErr=true;})
-      .then(function(){if(S.view==='home'||S.view==='me')render();});
+      .then(function(){if(S.view==='home'||S.view==='me')render();hideSplash();});
   }
+  var T0=Date.now(),splashDone=false;
+  function hideSplash(){
+    if(splashDone)return;splashDone=true;
+    var el=document.getElementById('splash');if(!el)return;
+    setTimeout(function(){
+      el.classList.add('out');
+      setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},450);
+    },Math.max(0,1200-(Date.now()-T0)));
+  }
+  setTimeout(hideSplash,4000);
   function loadProfile(){
     if(!S.sess)return Promise.resolve();
     return rest('GET','/profiles?id=eq.'+encodeURIComponent(S.sess.uid)+'&select=id,name,phone,area').then(function(rows){
