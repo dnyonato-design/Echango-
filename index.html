@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://lndevyjnquvdlglzzsek.supabase.co; connect-src https://lndevyjnquvdlglzzsek.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://lndevyjnquvdlglzzsek.supabase.co; connect-src https://lndevyjnquvdlglzzsek.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#107828">
 <meta name="description" content="Échango : achetez et vendez près de chez vous.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -359,7 +359,8 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
       .catch(function(){S.loadErr=true;})
       .then(function(){if(S.view==='home'||S.view==='me')render();hideSplash();});
   }
-  var T0=Date.now(),splashDone=false;
+  try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
+var T0=Date.now(),splashDone=false;
   function hideSplash(){
     if(splashDone)return;splashDone=true;
     var el=document.getElementById('splash');if(!el)return;
