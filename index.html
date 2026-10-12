@@ -163,6 +163,8 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 
 .soldb{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;background:var(--line);color:var(--muted);font-size:11px;font-weight:700;vertical-align:middle}
 .soldbar{background:var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600;margin:0 0 12px}
+.sharerow{display:flex;gap:8px;margin:14px 0}.sharerow .btn{flex:1;min-width:0;padding-inline:10px;font-size:14px;text-align:center}
+.btn.wa{background:#14803F;color:#fff;border-color:#14803F}
 .mrow{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;width:100%;text-align:left;padding:8px 0;border-bottom:1px solid var(--line)}
 .mrow .tile{border-radius:12px}
 .mrow .tile svg.i{width:26px;height:26px}
@@ -363,12 +365,22 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
       price:price,nego:!!l.negotiable,desc:String(l.description||''),loc:String(l.area||''),created:l.created_at,
       sold:l.status==='sold',photos:(Array.isArray(l.photos)?l.photos:[]).filter(function(u){return typeof u==='string'&&u.indexOf(PUB)===0;}).slice(0,4)};
   }
+  var deepId=(function(){try{var a=new URLSearchParams(location.search).get('a')||'';return UUID.test(a)?a.toLowerCase():'';}catch(e){return '';}})();
+  function shareUrl(p){return location.origin+location.pathname+'?a='+p.id;}
+  function shareHref(p){return 'https://wa.me/?text='+encodeURIComponent('Regarde cette annonce sur Échango : '+p.title+' – '+fmt(p.price)+(p.loc?' ('+p.loc+')':'')+'\n'+shareUrl(p));}
+  function openDeep(){
+    if(!deepId||S.listings===null||S.view!=='home')return;
+    var d=deepId;deepId='';
+    var l=getListing(d);
+    if(l&&!l.sold){S.pid=d;S.phIdx=0;S.view='detail';if(S.sess&&S.sess.uid!==l.seller_id)ensurePhone(l.seller_id);}
+    else setTimeout(function(){toast('Cette annonce n’est plus disponible.');},300);
+  }
   function loadListings(){
     S.loadErr=false;
     return rest('GET','/listings?select=id,seller_id,seller_name,title,category,condition,price,negotiable,description,area,photos,created_at,status&status=in.(active,sold)&order=created_at.desc&limit=100')
       .then(function(rows){S.listings=(Array.isArray(rows)?rows:[]).map(clean).filter(Boolean);})
       .catch(function(){S.loadErr=true;})
-      .then(function(){if(S.view==='home'||S.view==='me')render();hideSplash();});
+      .then(function(){openDeep();if(S.view==='home'||S.view==='me'||S.view==='detail')render();hideSplash();});
   }
   try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
 var T0=Date.now(),splashDone=false;
@@ -540,7 +552,8 @@ var T0=Date.now(),splashDone=false;
         (n>1?'<div class="thumbs">'+p.photos.map(function(u,i){return '<button data-a="ph" data-id="'+i+'" aria-label="Photo '+(i+1)+'" aria-pressed="'+(S.phIdx===i)+'"><img src="'+esc(u)+'" alt=""></button>';}).join('')+'</div>':'')+
         '<div class="detail">'+(p.sold?'<p class="soldbar">Cette annonce est marquée comme vendue. Elle n’est plus visible par les autres.</p>':'')+'<h1>'+esc(p.title)+'</h1><div class="price">'+fmt(p.price)+(p.nego?' <small>· à débattre</small>':'')+'</div>'+
         '<div class="tags">'+(p.cond?'<span class="tag">'+esc(p.cond)+'</span>':'')+'<span class="tag">'+esc(p.loc)+'</span><span class="tag">'+esc(ago(p.created))+'</span></div>'+
-        (p.desc?'<p>'+esc(p.desc)+'</p>':'')+sellerBox(p)+
+        (p.desc?'<p>'+esc(p.desc)+'</p>':'')+
+        (p.sold?'':'<div class="sharerow"><a class="btn wa" href="'+esc(shareHref(p))+'" target="_blank" rel="noopener noreferrer">Partager sur WhatsApp</a><button class="btn ghost" data-a="copylink" data-id="'+p.id+'">Copier le lien</button></div>')+sellerBox(p)+
         '<ul class="facts"><li>'+ico('check')+(p.cat==='s'?'Convenez du rendez-vous et du prix directement avec le vendeur.':'Remise en main propre ou livraison à convenir avec le vendeur.')+'</li>'+
         '<li>'+ico('check')+'Retrouvez-vous dans un lieu public et payez à la remise de l’article.</li>'+
         '<li>'+ico('check')+'Ne versez jamais d’argent à l’avance.</li></ul>'+
@@ -836,6 +849,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='dcond'){S.draft.cond=id;render();}
     else if(a==='delph'){var r=S.draft.photos.splice(+id,1)[0];if(r)URL.revokeObjectURL(r.url);render();}
     else if(a==='publish'){publish();}
+    else if(a==='copylink'){var lk=getListing(id);if(lk){try{navigator.clipboard.writeText(shareUrl(lk)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}}
     else if(a==='copy'){try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
     else if(a==='sold'||a==='unsold'){setSold(id,a==='sold');}
     else if(a==='askDel'){S.confirmDel=true;render();}
