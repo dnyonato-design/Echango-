@@ -123,6 +123,10 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .tab.sell[aria-current="page"]{color:var(--brand)}
 .tab.sell .plusb{width:44px;height:30px;border-radius:12px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center}
 
+.linkbtn{display:inline-flex;align-items:center;min-height:44px;color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.rad{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:8px;cursor:pointer}
+.rad:has(input:checked){border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.rad input{accent-color:var(--brand);width:20px;height:20px;margin:0;flex:none}
 .sec{font-size:15px;font-weight:800;margin:20px 0 10px;font-family:var(--display)}
 .sec:first-child{margin-top:0}
 .field{display:grid;gap:6px;margin-bottom:14px}
@@ -208,7 +212,9 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     sess:null,prof:null,profReady:false,after:null,
     authMode:'login',af:{email:'',password:'',name:'',phone:'',area:''},authErr:'',authMsg:'',busy:false,
     pf:{name:'',phone:'',area:''},pfErr:{},
-    draft:null,derr:{},sellErr:'',phones:{},theme:'auto'};
+    draft:null,derr:{},sellErr:'',phones:{},theme:'auto',
+    rep:{reason:'',details:'',busy:false,err:''},rv:{pw:'',pw2:'',busy:false,err:''}};
+  var REASONS=[['arnaque','Arnaque ou demande d’argent à l’avance'],['interdit','Article interdit ou illégal'],['faux','Fausse annonce ou photos trompeuses'],['autre','Autre raison']];
 
   /* ---------- petits outils ---------- */
   function $(s){return document.querySelector(s);}
@@ -256,6 +262,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     if(c==='email_not_confirmed'||/not confirmed/i.test(m))return 'Confirmez d’abord votre e-mail : ouvrez le message reçu, puis reconnectez-vous.';
     if(c==='over_email_send_rate_limit'||c==='over_request_rate_limit'||e.status===429)return 'Trop de tentatives. Réessayez dans quelques minutes.';
     if(c==='weak_password')return 'Mot de passe trop faible. Choisissez-en un plus long.';
+    if(c==='same_password')return 'Choisissez un mot de passe différent de l’ancien.';
     if(c==='signup_disabled')return 'Les inscriptions sont fermées pour le moment.';
     if(e.status===413)return 'Fichier trop lourd.';
     if(e.status===401||e.status===403)return 'Action non autorisée. Reconnectez-vous et réessayez.';
@@ -382,14 +389,24 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   }
   function renderGrid(){var g=$('#grid');if(g)g.innerHTML=gridHtml();}
 
+  function forgotView(){
+    return '<button class="linkbtn" data-a="amode" data-id="login">← Retour à la connexion</button>'+
+      '<h3 class="sec">Mot de passe oublié</h3><p class="muted" style="margin-bottom:12px">Entrez l’e-mail de votre compte : nous vous enverrons un lien pour choisir un nouveau mot de passe.</p>'+
+      '<form data-form="forgot" novalidate>'+
+      (S.authMsg?'<p class="ok" role="status">'+esc(S.authMsg)+'</p>':'')+(S.authErr?'<p class="err" role="alert">'+esc(S.authErr)+'</p>':'')+
+      field('a-email','E-mail',input('a-email',S.af.email,{type:'email',im:'email',ac:'email',ph:'vous@exemple.com'}))+
+      '<button class="btn block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un instant…':'Envoyer le lien')+'</button></form>';
+  }
   function authView(msg){
     var f=S.af,up=S.authMode==='signup';
+    if(S.authMode==='forgot')return forgotView();
     return '<div class="box" style="margin-bottom:16px"><p>'+esc(msg)+'</p></div>'+
       '<div class="seg two" role="group" aria-label="Connexion ou inscription"><button data-a="amode" data-id="login" aria-pressed="'+(!up)+'">Connexion</button><button data-a="amode" data-id="signup" aria-pressed="'+up+'">Créer un compte</button></div>'+
       '<form data-form="auth" novalidate>'+
       (S.authMsg?'<p class="ok" role="status">'+esc(S.authMsg)+'</p>':'')+(S.authErr?'<p class="err" role="alert">'+esc(S.authErr)+'</p>':'')+
       field('a-email','E-mail',input('a-email',f.email,{type:'email',im:'email',ac:'email',ph:'vous@exemple.com'}))+
       field('a-password','Mot de passe',input('a-password',f.password,{type:'password',ac:up?'new-password':'current-password'}),null,up?'Au moins 8 caractères.':'')+
+      (!up?'<button type="button" class="linkbtn" data-a="amode" data-id="forgot" style="margin:-8px 0 8px">Mot de passe oublié ?</button>':'')+
       (up?field('a-name','Nom complet',input('a-name',f.name,{ac:'name',max:60}))+
         field('a-phone','Téléphone',input('a-phone',f.phone,{im:'tel',ac:'tel-national',ph:'90 12 34 56',prefix:'+228'}),null,'Visible seulement par les membres connectés, pour qu’ils puissent vous joindre.')+
         field('a-area','Quartier (facultatif)',input('a-area',f.area,{max:40,ph:'Ex : Tokoin'})):'')+
@@ -438,7 +455,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 
   /* ---------- affichage ---------- */
   function render(){
-    if(S.view==='detail'&&!getListing(S.pid))S.view='home';
+    if((S.view==='detail'||S.view==='report')&&!getListing(S.pid))S.view='home';
     var main=$('#main'),st=main.scrollTop,prev=main.dataset.view,v=S.view,top='',html='',bot='',g;
 
     if(v==='home'){
@@ -459,8 +476,32 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
         (p.desc?'<p>'+esc(p.desc)+'</p>':'')+sellerBox(p)+
         '<ul class="facts"><li>'+ico('check')+(p.cat==='s'?'Convenez du rendez-vous et du prix directement avec le vendeur.':'Remise en main propre ou livraison à convenir avec le vendeur.')+'</li>'+
         '<li>'+ico('check')+'Retrouvez-vous dans un lieu public et payez à la remise de l’article.</li>'+
-        '<li>'+ico('check')+'Ne versez jamais d’argent à l’avance.</li></ul></div>';
+        '<li>'+ico('check')+'Ne versez jamais d’argent à l’avance.</li></ul>'+
+        ((S.sess&&S.sess.uid===p.seller_id)?'':'<button class="linkbtn" data-a="report">Signaler cette annonce</button>')+'</div>';
       bot=contactBar(p);
+    }
+    else if(v==='report'){
+      var rl=getListing(S.pid);
+      top=backBar('Signaler l’annonce','detail');
+      g=gate('Connectez-vous pour signaler une annonce.');
+      if(g!==null)html=g;
+      else html='<p class="muted" style="margin-bottom:12px">Pourquoi signalez-vous « '+esc(rl.title)+' » ? Nous examinerons votre signalement.</p>'+
+        '<form data-form="report" novalidate><div role="radiogroup" aria-label="Raison du signalement">'+
+        REASONS.map(function(r){return '<label class="rad"><input type="radio" name="reason" value="'+r[0]+'"'+(S.rep.reason===r[0]?' checked':'')+'><span>'+r[1]+'</span></label>';}).join('')+'</div>'+
+        field('r-details','Précisions (facultatif)','<div class="ctl"><textarea id="r-details" rows="3" maxlength="300" placeholder="Que s’est-il passé ?">'+esc(S.rep.details)+'</textarea></div>')+
+        (S.rep.err?'<p class="err" role="alert">'+esc(S.rep.err)+'</p>':'')+
+        '<button class="btn block" type="submit"'+(S.rep.busy?' disabled':'')+'>'+(S.rep.busy?'Envoi…':'Envoyer le signalement')+'</button></form>';
+      bot='';
+    }
+    else if(v==='recovery'){
+      top='<div class="bar"><h2>Nouveau mot de passe</h2></div>';
+      html='<div class="box" style="margin-bottom:16px"><p>Choisissez un nouveau mot de passe pour votre compte.</p></div>'+
+        '<form data-form="reset" novalidate>'+(S.rv.err?'<p class="err" role="alert">'+esc(S.rv.err)+'</p>':'')+
+        field('r-pw','Nouveau mot de passe',input('r-pw',S.rv.pw,{type:'password',ac:'new-password'}),null,'Au moins 8 caractères.')+
+        field('r-pw2','Répétez le mot de passe',input('r-pw2',S.rv.pw2,{type:'password',ac:'new-password'}))+
+        '<button class="btn block" type="submit"'+(S.rv.busy?' disabled':'')+'>'+(S.rv.busy?'Un instant…':'Enregistrer')+'</button></form>'+
+        '<button class="linkbtn" data-a="tab" data-v="home">Plus tard</button>';
+      bot='';
     }
     else if(v==='sell'){
       top='<div class="bar"><h2>Publier une annonce</h2></div>';
@@ -651,6 +692,41 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
       S.busy=false;S.confirmDel=false;go('home');toast('Annonce retirée');
     }).catch(function(e){S.busy=false;S.confirmDel=false;render();toast(errMsg(e));});
   }
+  function doForgot(){
+    if(S.busy)return;
+    var email=S.af.email.trim().toLowerCase();
+    S.authErr='';S.authMsg='';
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){S.authErr='Entrez une adresse e-mail valide.';render();return;}
+    S.busy=true;render();
+    http(SB+'/auth/v1/recover',{method:'POST',headers:hdr({'Content-Type':'application/json'}),body:JSON.stringify({email:email})}).then(function(){
+      S.busy=false;S.authMsg='Si un compte existe avec cette adresse, un e-mail vient d’être envoyé. Ouvrez-le et touchez le lien (regardez aussi dans les spams).';render();
+    }).catch(function(e){S.busy=false;S.authErr=errMsg(e);render();});
+  }
+  function doReset(){
+    if(S.rv.busy)return;
+    var r=S.rv;r.err='';
+    if(r.pw.length<8)r.err='Le mot de passe doit avoir au moins 8 caractères.';
+    else if(r.pw!==r.pw2)r.err='Les deux mots de passe ne sont pas identiques.';
+    if(r.err){render();return;}
+    r.busy=true;render();
+    token().then(function(tok){
+      return http(SB+'/auth/v1/user',{method:'PUT',headers:hdr({'Content-Type':'application/json'},tok),body:JSON.stringify({password:r.pw})});
+    }).then(function(){
+      S.rv={pw:'',pw2:'',busy:false,err:''};go('me');toast('Mot de passe modifié');
+    }).catch(function(e){r.busy=false;r.err=errMsg(e);render();});
+  }
+  function doReport(){
+    if(S.rep.busy)return;
+    var l=getListing(S.pid);if(!l||!S.sess||!S.prof)return;
+    if(!S.rep.reason){S.rep.err='Choisissez une raison.';render();return;}
+    S.rep.busy=true;S.rep.err='';render();
+    rest('POST','/reports',{listing_id:l.id,reporter_id:S.sess.uid,reason:S.rep.reason,details:S.rep.details.trim()||null}).then(function(){
+      S.rep={reason:'',details:'',busy:false,err:''};go('detail');toast('Merci, nous allons examiner cette annonce.');
+    }).catch(function(e){
+      if(e&&e.status===409&&String(e.code)==='23505'){S.rep={reason:'',details:'',busy:false,err:''};go('detail');toast('Vous avez déjà signalé cette annonce.');return;}
+      S.rep.busy=false;S.rep.err=errMsg(e);render();
+    });
+  }
   function logout(){
     var tok=S.sess&&S.sess.access_token;
     if(tok)http(SB+'/auth/v1/logout',{method:'POST',headers:hdr({},tok)}).catch(function(){});
@@ -666,13 +742,14 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     else if(a==='reload'){S.listings=null;S.loadErr=false;render();loadListings();}
     else if(a==='open'){
       if(!UUID.test(id))return;
-      S.pid=id;S.phIdx=0;S.confirmDel=false;
+      S.pid=id;S.phIdx=0;S.confirmDel=false;S.after=null;
       var l=getListing(id);if(l&&S.sess&&S.sess.uid!==l.seller_id&&S.profReady)ensurePhone(l.seller_id);
       go('detail');
     }
     else if(a==='ph'){S.phIdx=+id;render();}
     else if(a==='loginToContact'){S.after='detail';S.authMode='login';S.view='me';render();}
     else if(a==='retryprof'){retryProf();}
+    else if(a==='report'){S.rep={reason:'',details:'',busy:false,err:''};S.after='report';go('report');}
     else if(a==='amode'){S.authMode=id;S.authErr='';S.authMsg='';render();}
     else if(a==='dcat'){S.draft.cat=id;render();}
     else if(a==='dcond'){S.draft.cond=id;render();}
@@ -688,7 +765,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   $('#app').addEventListener('submit',function(e){
     e.preventDefault();
     var k=e.target.dataset&&e.target.dataset.form;
-    if(k==='auth')doAuth();else if(k==='profile')saveProf();
+    if(k==='auth')doAuth();else if(k==='profile')saveProf();else if(k==='forgot')doForgot();else if(k==='reset')doReset();else if(k==='report')doReport();
   });
   $('#app').addEventListener('input',function(e){
     var t=e.target,id=t.id;
@@ -701,6 +778,9 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     else if(id==='p-name'){S.pf.name=t.value;clearErr(t,S.pfErr,'name');}
     else if(id==='p-phone'){S.pf.phone=t.value;clearErr(t,S.pfErr,'phone');}
     else if(id==='p-area')S.pf.area=t.value;
+    else if(id==='r-pw')S.rv.pw=t.value;
+    else if(id==='r-pw2')S.rv.pw2=t.value;
+    else if(id==='r-details')S.rep.details=t.value;
     else if(id==='d-name'){S.draft.name=t.value;clearErr(t,S.derr,'name');}
     else if(id==='d-price'){S.draft.price=t.value;clearErr(t,S.derr,'price');}
     else if(id==='d-desc')S.draft.desc=t.value;
@@ -715,6 +795,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   $('#app').addEventListener('change',function(e){
     if(e.target.id==='f-photos'){addPhotos(e.target.files);e.target.value='';}
     else if(e.target.id==='d-nego'){S.draft.nego=e.target.checked;}
+    else if(e.target.name==='reason'){S.rep.reason=e.target.value;S.rep.err='';var pe=document.querySelector('.err');if(pe&&S.view==='report')pe.remove();}
   });
 
   /* ---------- démarrage ---------- */
@@ -724,9 +805,29 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     var ss=JSON.parse(lsGet('ec-session')||'null');
     if(ss&&typeof ss.access_token==='string'&&typeof ss.refresh_token==='string'&&typeof ss.uid==='string'&&UUID.test(ss.uid)&&typeof ss.expires_at==='number')S.sess=ss;
   }catch(e){}
+  function readRecovery(){
+    var h=location.hash||'';
+    if(h.length<2)return null;
+    var p;try{p=new URLSearchParams(h.slice(1));}catch(e){return null;}
+    var isRec=p.get('type')==='recovery'&&p.get('access_token')&&p.get('refresh_token');
+    var isErr=!isRec&&(p.get('error_code')||p.get('error'));
+    if(!isRec&&!isErr)return null;
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+    if(isErr){S.view='me';S.authMode='forgot';S.authErr='Ce lien a expiré ou a déjà servi. Demandez-en un nouveau.';return null;}
+    return {access_token:p.get('access_token'),refresh_token:p.get('refresh_token'),expires_in:+p.get('expires_in')||3600,expires_at:+p.get('expires_at')||0};
+  }
+  var recov=readRecovery();
   render();
   loadListings();
-  if(S.sess){
+  if(recov){
+    http(SB+'/auth/v1/user',{headers:hdr({},recov.access_token)}).then(function(u){
+      if(!u||!UUID.test(String(u.id||'')))throw new Error('bad user');
+      recov.user={id:u.id,email:u.email};setSession(recov);
+      return loadProfile().catch(function(){});
+    }).then(function(){S.view='recovery';render();}).catch(function(){
+      clearSession();S.view='me';S.authMode='forgot';S.authErr='Ce lien a expiré ou a déjà servi. Demandez-en un nouveau.';render();
+    });
+  }else if(S.sess){
     loadProfile().catch(function(){S.profReady=false;S.profFail=!!S.sess;}).then(function(){if(S.view==='me'||S.view==='sell'||S.view==='detail'){var l=getListing(S.pid);if(S.view==='detail'&&l&&S.sess&&S.sess.uid!==l.seller_id)ensurePhone(l.seller_id);render();}});
   }
 })();
