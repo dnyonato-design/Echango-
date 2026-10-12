@@ -153,6 +153,8 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .padd{width:76px;height:76px;border-radius:14px;border:1.5px dashed var(--muted);display:grid;place-items:center;align-content:center;gap:2px;font-size:12px;color:var(--muted);cursor:pointer}
 .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
 
+.soldb{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;background:var(--line);color:var(--muted);font-size:11px;font-weight:700;vertical-align:middle}
+.soldbar{background:var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600;margin:0 0 12px}
 .mrow{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;width:100%;text-align:left;padding:8px 0;border-bottom:1px solid var(--line)}
 .mrow .tile{border-radius:12px}
 .mrow .tile svg.i{width:26px;height:26px}
@@ -350,11 +352,11 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     return {id:l.id,seller_id:l.seller_id,seller_name:String(l.seller_name||'Vendeur'),title:String(l.title||''),
       cat:ICON[l.category]?l.category:'o',cond:(l.condition==='Neuf'||l.condition==='Occasion')?l.condition:null,
       price:price,nego:!!l.negotiable,desc:String(l.description||''),loc:String(l.area||''),created:l.created_at,
-      photos:(Array.isArray(l.photos)?l.photos:[]).filter(function(u){return typeof u==='string'&&u.indexOf(PUB)===0;}).slice(0,4)};
+      sold:l.status==='sold',photos:(Array.isArray(l.photos)?l.photos:[]).filter(function(u){return typeof u==='string'&&u.indexOf(PUB)===0;}).slice(0,4)};
   }
   function loadListings(){
     S.loadErr=false;
-    return rest('GET','/listings?select=id,seller_id,seller_name,title,category,condition,price,negotiable,description,area,photos,created_at&status=eq.active&order=created_at.desc&limit=100')
+    return rest('GET','/listings?select=id,seller_id,seller_name,title,category,condition,price,negotiable,description,area,photos,created_at,status&status=in.(active,sold)&order=created_at.desc&limit=100')
       .then(function(rows){S.listings=(Array.isArray(rows)?rows:[]).map(clean).filter(Boolean);})
       .catch(function(){S.loadErr=true;})
       .then(function(){if(S.view==='home'||S.view==='me')render();hideSplash();});
@@ -420,9 +422,9 @@ var T0=Date.now(),splashDone=false;
     if(S.listings===null&&!S.loadErr)return '<div class="loading"><div class="spin" aria-hidden="true"></div><p>Chargement des annonces…</p></div>';
     if(S.loadErr&&!(S.listings&&S.listings.length))return '<div class="empty">'+ico('search')+'<h3>Connexion impossible</h3><p>Vérifiez votre internet, puis réessayez.</p><button class="btn" data-a="reload">Réessayer</button></div>';
     var q=norm(S.q.trim());
-    var list=(S.listings||[]).filter(function(p){return (S.cat==='all'||p.cat===S.cat)&&(!q||norm(p.title).indexOf(q)>-1||norm(p.desc).indexOf(q)>-1||norm(p.loc).indexOf(q)>-1);});
+    var list=(S.listings||[]).filter(function(p){return !p.sold&&(S.cat==='all'||p.cat===S.cat)&&(!q||norm(p.title).indexOf(q)>-1||norm(p.desc).indexOf(q)>-1||norm(p.loc).indexOf(q)>-1);});
     if(!list.length){
-      if(!(S.listings||[]).length)return '<div class="empty">'+ico('tag')+'<h3>Aucune annonce pour l’instant</h3><p>Soyez le premier à publier !</p><button class="btn" data-a="tab" data-v="sell">Publier une annonce</button></div>';
+      if(!(S.listings||[]).filter(function(p){return !p.sold;}).length)return '<div class="empty">'+ico('tag')+'<h3>Aucune annonce pour l’instant</h3><p>Soyez le premier à publier !</p><button class="btn" data-a="tab" data-v="sell">Publier une annonce</button></div>';
       return '<div class="empty">'+ico('search')+'<h3>Aucun résultat</h3><p>Essayez un autre mot, par exemple « robe » ou « ventilateur ».</p></div>';
     }
     return '<div class="grid">'+list.map(card).join('')+'</div>';
@@ -474,7 +476,7 @@ var T0=Date.now(),splashDone=false;
     if(S.sess&&S.sess.uid===p.seller_id){
       return S.confirmDel?
         '<div class="actionbar col"><p class="muted" style="text-align:center">Retirer cette annonce ? Elle sera supprimée.</p><div style="display:flex;gap:10px"><button class="btn ghost" data-a="cancelDel">Annuler</button><button class="btn danger" data-a="doDel" data-id="'+p.id+'"'+(S.busy?' disabled':'')+'>'+(S.busy?'Suppression…':'Retirer')+'</button></div></div>':
-        '<div class="actionbar"><button class="btn ghost" data-a="askDel">Retirer l’annonce</button></div>';
+        '<div class="actionbar"><button class="btn ghost" data-a="askDel">Retirer</button><button class="btn" data-a="'+(p.sold?'unsold':'sold')+'" data-id="'+p.id+'"'+(S.busy?' disabled':'')+'>'+(p.sold?'Remettre en vente':'Marquer comme vendu')+'</button></div>';
     }
     if(!S.sess)return '<div class="actionbar"><button class="btn" data-a="loginToContact">Se connecter pour contacter</button></div>';
     var ph=S.phones[p.seller_id];
@@ -511,7 +513,7 @@ var T0=Date.now(),splashDone=false;
       top=backBar('Annonce','home');
       html='<div class="tile hero t-'+p.cat+'">'+tileIn(p,S.phIdx)+'</div>'+
         (n>1?'<div class="thumbs">'+p.photos.map(function(u,i){return '<button data-a="ph" data-id="'+i+'" aria-label="Photo '+(i+1)+'" aria-pressed="'+(S.phIdx===i)+'"><img src="'+esc(u)+'" alt=""></button>';}).join('')+'</div>':'')+
-        '<div class="detail"><h1>'+esc(p.title)+'</h1><div class="price">'+fmt(p.price)+(p.nego?' <small>· à débattre</small>':'')+'</div>'+
+        '<div class="detail">'+(p.sold?'<p class="soldbar">Cette annonce est marquée comme vendue. Elle n’est plus visible par les autres.</p>':'')+'<h1>'+esc(p.title)+'</h1><div class="price">'+fmt(p.price)+(p.nego?' <small>· à débattre</small>':'')+'</div>'+
         '<div class="tags">'+(p.cond?'<span class="tag">'+esc(p.cond)+'</span>':'')+'<span class="tag">'+esc(p.loc)+'</span><span class="tag">'+esc(ago(p.created))+'</span></div>'+
         (p.desc?'<p>'+esc(p.desc)+'</p>':'')+sellerBox(p)+
         '<ul class="facts"><li>'+ico('check')+(p.cat==='s'?'Convenez du rendez-vous et du prix directement avec le vendeur.':'Remise en main propre ou livraison à convenir avec le vendeur.')+'</li>'+
@@ -574,7 +576,7 @@ var T0=Date.now(),splashDone=false;
         var mine=(S.listings||[]).filter(function(x){return x.seller_id===S.sess.uid;}),nm=S.prof.name.trim();
         html='<div class="box seller"><div class="who"><span class="av big">'+esc(nm.charAt(0).toUpperCase()||'?')+'</span><div><b>'+esc(nm)+'</b><span class="muted">+228 '+esc(fmtPhone(S.prof.phone))+'</span><span class="muted">'+esc(S.sess.email||'')+'</span></div></div></div>'+
           '<h3 class="sec">Mes annonces ('+mine.length+')</h3>'+
-          (mine.length?mine.map(function(x){return '<button class="mrow" data-a="open" data-id="'+x.id+'"><span class="tile t-'+x.cat+'">'+tileIn(x)+'</span><span class="mi"><b>'+esc(x.title)+'</b><span class="price">'+fmt(x.price)+'</span></span></button>';}).join(''):
+          (mine.length?mine.map(function(x){return '<button class="mrow" data-a="open" data-id="'+x.id+'"><span class="tile t-'+x.cat+'">'+tileIn(x)+'</span><span class="mi"><b>'+esc(x.title)+'</b><span class="price">'+fmt(x.price)+(x.sold?' <span class="soldb">Vendu</span>':'')+'</span></span></button>';}).join(''):
             '<div class="box"><p class="muted">Vous n’avez rien publié pour l’instant.</p><button class="btn block" style="margin-top:10px" data-a="tab" data-v="sell">Publier une annonce</button></div>')+
           profileForm('Mes informations')+
           '<h3 class="sec">Apparence</h3><div class="seg" role="group" aria-label="Thème">'+
@@ -722,6 +724,15 @@ var T0=Date.now(),splashDone=false;
       removePhotos(done);
     });
   }
+  function setSold(id,sold){
+    if(S.busy)return;
+    var l=getListing(id);if(!l||!S.sess||l.seller_id!==S.sess.uid)return;
+    S.busy=true;render();
+    rest('PATCH','/listings?id=eq.'+encodeURIComponent(id),{status:sold?'sold':'active'}).then(function(){
+      l.sold=sold;S.busy=false;
+      if(sold){go('home');toast('Bravo ! Annonce marquée comme vendue');}else{render();toast('Annonce remise en vente');}
+    }).catch(function(e){S.busy=false;render();toast(errMsg(e));});
+  }
   function delListing(id){
     if(S.busy)return;
     var l=getListing(id);if(!l||!S.sess||l.seller_id!==S.sess.uid)return;
@@ -796,6 +807,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='delph'){var r=S.draft.photos.splice(+id,1)[0];if(r)URL.revokeObjectURL(r.url);render();}
     else if(a==='publish'){publish();}
     else if(a==='copy'){try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
+    else if(a==='sold'||a==='unsold'){setSold(id,a==='sold');}
     else if(a==='askDel'){S.confirmDel=true;render();}
     else if(a==='cancelDel'){S.confirmDel=false;render();}
     else if(a==='doDel'){delListing(id);}
