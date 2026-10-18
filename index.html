@@ -172,6 +172,10 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .heart svg.i{width:20px;height:20px;stroke-width:2}
 .heart[aria-pressed="true"]{color:var(--danger)}.heart[aria-pressed="true"] svg.i{fill:currentColor}
 .trow{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.trow .heart{position:static;flex:none}
+.legal h2{font-size:21px;font-weight:800;margin:6px 0 4px;font-family:var(--display)}.legal h2:not(:first-child){margin-top:30px;padding-top:22px;border-top:1px solid var(--line)}
+.legal h3{font-size:16px;font-weight:800;margin:20px 0 6px}.legal p{margin:0 0 10px;line-height:1.55}.legal ul{margin:0 0 10px;padding-left:20px;display:grid;gap:6px;line-height:1.5}
+.inl{display:inline;padding:0;color:var(--brand);text-decoration:underline;text-underline-offset:3px;font:inherit;text-align:left}
+.check.terms{align-items:flex-start;margin:4px 0 16px;font-size:14px;line-height:1.45}.check.terms input{margin-top:1px;flex:none}
 .mrow{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;width:100%;text-align:left;padding:8px 0;border-bottom:1px solid var(--line)}
 .mrow .tile{border-radius:12px}
 .mrow .tile svg.i{width:26px;height:26px}
@@ -258,9 +262,9 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   var ICON={v:'shirt',e:'bolt',s:'wrench',o:'tag'};
   var UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  var S={view:'home',cat:'all',q:'',fOpen:false,favs:{},favsReady:false,sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
+  var S={view:'home',cat:'all',q:'',fOpen:false,favs:{},favsReady:false,lback:'me',sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
     sess:null,prof:null,profReady:false,after:null,
-    authMode:'login',af:{email:'',password:'',name:'',phone:'',area:''},authErr:'',authMsg:'',busy:false,
+    authMode:'login',af:{email:'',password:'',name:'',phone:'',area:'',terms:false},authErr:'',authMsg:'',busy:false,
     pf:{name:'',phone:'',area:''},pfErr:{},
     draft:null,derr:{},sellErr:'',phones:{},theme:'auto',
     rep:{reason:'',details:'',busy:false,err:''},rv:{pw:'',pw2:'',busy:false,err:''}};
@@ -450,6 +454,21 @@ var T0=Date.now(),splashDone=false;
     var sell='<button class="tab sell" data-a="tab" data-v="sell"'+(active==='sell'?' aria-current="page"':'')+'><span class="plusb">'+ico('plus')+'</span>Vendre</button>';
     return '<nav class="tabbar" aria-label="Navigation">'+tab('home','home','Accueil')+tab('favs','heart','Favoris')+sell+tab('me','user','Profil')+'</nav>';
   }
+  var CONTACT='';
+  var LEGAL=[["t", "Conditions d’utilisation"], ["m", "Dernière mise à jour : 18 octobre 2026"], ["h", "1. Ce qu’est Échango"], ["p", "Échango est une application de petites annonces. Elle permet à chacun de publier des articles ou des services et de se mettre en contact directement avec les autres membres, par WhatsApp ou par téléphone."], ["p", "Échango n’est ni vendeur, ni acheteur, ni intermédiaire de paiement. Aucun paiement ne passe par l’application. Chaque vente est un accord entre l’acheteur et le vendeur."], ["h", "2. Votre compte"], ["ul", ["Vous devez avoir 18 ans ou plus.", "Les informations de votre compte (nom, numéro de téléphone, e-mail) doivent être exactes.", "Gardez votre mot de passe secret. Vous êtes responsable de ce qui est fait avec votre compte.", "Une personne = un compte."]], ["h", "3. Publier une annonce"], ["p", "Vous vous engagez à publier des annonces vraies, avec vos propres photos de l’article réellement proposé et un prix honnête en FCFA."], ["p", "Il est interdit de publier :"], ["ul", ["des articles volés, contrefaits ou dont la vente est interdite par la loi ;", "des armes, des drogues, des médicaments sans autorisation, des animaux protégés ;", "des documents d’identité ou des données personnelles d’autres personnes ;", "du contenu pornographique, violent, haineux ou qui harcèle quelqu’un ;", "de fausses annonces, des arnaques, ou toute annonce qui demande de l’argent à l’avance ;", "des annonces en double ou sans rapport avec la vente."]], ["h", "4. Acheter et vendre en sécurité"], ["ul", ["Retrouvez-vous dans un lieu public et payez à la remise de l’article.", "Ne versez jamais d’argent à l’avance, même pour « réserver ».", "Vérifiez l’article avant de payer.", "Méfiez-vous d’un prix trop beau pour être vrai.", "Signalez toute annonce suspecte avec le bouton « Signaler cette annonce »."]], ["p", "Échango ne peut pas garantir la qualité des articles ni l’honnêteté des membres. Les échanges se font sous votre propre responsabilité."], ["h", "5. Modération"], ["p", "Nous pouvons retirer une annonce ou suspendre un compte, sans prévenir, si les règles ne sont pas respectées ou si une annonce est signalée comme frauduleuse. Les signalements sont examinés à la main."], ["h", "6. Responsabilité"], ["p", "Échango est fourni tel quel, pendant sa période bêta. Nous faisons de notre mieux pour qu’il fonctionne, mais nous ne garantissons pas qu’il soit toujours disponible ni sans erreur. Dans les limites permises par la loi, Échango n’est pas responsable des pertes liées aux échanges entre membres."], ["h", "7. Vos contenus"], ["p", "Vos annonces et vos photos restent à vous. En les publiant, vous autorisez Échango à les afficher dans l’application et à les partager via les liens de partage. Vous pouvez supprimer vos annonces à tout moment."], ["h", "8. Changements"], ["p", "Ces conditions peuvent évoluer. En cas de changement important, nous le signalerons dans l’application. Continuer à l’utiliser veut dire que vous acceptez la nouvelle version."], ["t", "Politique de confidentialité"], ["h", "Les informations que nous gardons"], ["ul", ["Votre adresse e-mail et votre mot de passe (le mot de passe est protégé et personne ne peut le lire, nous non plus).", "Votre nom, votre numéro de téléphone et votre quartier.", "Vos annonces : titre, description, prix, photos, quartier.", "Vos favoris.", "Les signalements que vous faites."]], ["h", "À quoi cela sert"], ["p", "Uniquement à faire fonctionner Échango : créer votre compte, publier vos annonces, permettre aux acheteurs de vous joindre et traiter les signalements. Nous ne vendons pas vos données et nous n’affichons pas de publicité ciblée."], ["h", "Qui voit quoi"], ["ul", ["Visible par tous : votre nom, votre quartier et vos annonces.", "Visible seulement par les membres connectés : votre numéro de téléphone.", "Jamais affichés : votre e-mail et votre mot de passe.", "Privés : vos favoris."]], ["h", "Où sont gardées vos données"], ["p", "Les données et les photos sont hébergées par Supabase. Le site est hébergé par GitHub Pages. Les polices de caractères viennent de Google Fonts. Un service d’envoi d’e-mails est utilisé pour les messages de réinitialisation du mot de passe. Votre navigateur garde aussi quelques réglages sur votre téléphone (votre connexion et le thème clair ou sombre). Nous n’utilisons pas de cookies de suivi ni d’outil de statistiques."], ["h", "Combien de temps"], ["p", "Vos données restent tant que votre compte existe. Quand vous supprimez une annonce, ses photos sont effacées aussi."], ["h", "Vos droits"], ["p", "Vous pouvez demander à voir, corriger ou supprimer vos données, y compris la suppression de votre compte. Vous pouvez modifier votre nom, votre numéro et votre quartier dans l’onglet Profil."], ["h", "Contact"], ["p", "Pour toute question, demande de suppression de compte ou signalement :"]];
+  function legalHtml(){
+    var out='<div class="legal">';
+    LEGAL.forEach(function(b){
+      if(b[0]==='t')out+='<h2>'+esc(b[1])+'</h2>';
+      else if(b[0]==='h')out+='<h3>'+esc(b[1])+'</h3>';
+      else if(b[0]==='m')out+='<p class="muted">'+esc(b[1])+'</p>';
+      else if(b[0]==='p')out+='<p>'+esc(b[1])+'</p>';
+      else if(b[0]==='ul')out+='<ul>'+b[1].map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+    });
+    out+=CONTACT?'<p><b>'+esc(CONTACT)+'</b></p>':'<p>Utilisez le bouton « Signaler cette annonce » dans l’application.</p>';
+    return out+'</div>';
+  }
+  function legalLink(){return '<button class="linkbtn" data-a="legal" style="margin-top:16px">Conditions d’utilisation et confidentialité</button>';}
   function heartBtn(id){var on=!!S.favs[id];return '<button class="heart" data-a="fav" data-id="'+id+'" aria-pressed="'+on+'" aria-label="'+(on?'Retirer des favoris':'Ajouter aux favoris')+'">'+ico('heart')+'</button>';}
   function loadFavs(){
     if(!S.sess)return Promise.resolve();
@@ -521,7 +540,8 @@ var T0=Date.now(),splashDone=false;
       (!up?'<button type="button" class="linkbtn" data-a="amode" data-id="forgot" style="margin:-8px 0 8px">Mot de passe oublié ?</button>':'')+
       (up?field('a-name','Nom complet',input('a-name',f.name,{ac:'name',max:60}))+
         field('a-phone','Téléphone',input('a-phone',f.phone,{im:'tel',ac:'tel-national',ph:'90 12 34 56',prefix:'+228'}),null,'Visible seulement par les membres connectés, pour qu’ils puissent vous joindre.')+
-        field('a-area','Quartier (facultatif)',input('a-area',f.area,{max:40,ph:'Ex : Tokoin'})):'')+
+        field('a-area','Quartier (facultatif)',input('a-area',f.area,{max:40,ph:'Ex : Tokoin'}))+
+        '<label class="check terms"><input type="checkbox" id="a-terms"'+(f.terms?' checked':'')+'><span>J’ai 18 ans ou plus et j’accepte les <button type="button" class="inl" data-a="legal">conditions d’utilisation et la politique de confidentialité</button>.</span></label>':'')+
       '<button class="btn block" type="submit"'+(S.busy?' disabled':'')+'>'+(S.busy?'Un instant…':(up?'Créer mon compte':'Me connecter'))+'</button></form>';
   }
   function profileForm(title,intro){
@@ -595,6 +615,11 @@ var T0=Date.now(),splashDone=false;
         '<li>'+ico('check')+'Ne versez jamais d’argent à l’avance.</li></ul>'+
         ((S.sess&&S.sess.uid===p.seller_id)?'':'<button class="linkbtn" data-a="report">Signaler cette annonce</button>')+'</div>';
       bot=contactBar(p);
+    }
+    else if(v==='legal'){
+      top=backBar('Conditions et confidentialité',S.lback||'me');
+      html=legalHtml();
+      bot=tabs('me');
     }
     else if(v==='favs'){
       top='<div class="bar"><h2>Mes favoris</h2></div>';
@@ -673,7 +698,7 @@ var T0=Date.now(),splashDone=false;
     else if(v==='me'){
       top='<div class="bar"><h2>Profil</h2></div>';
       g=gate('Connectez-vous pour publier, suivre vos annonces et contacter les vendeurs.');
-      if(g!==null)html=g;
+      if(g!==null)html=g+legalLink();
       else{
         var mine=(S.listings||[]).filter(function(x){return x.seller_id===S.sess.uid;}),nm=S.prof.name.trim();
         html='<div class="box seller"><div class="who"><span class="av big">'+esc(nm.charAt(0).toUpperCase()||'?')+'</span><div><b>'+esc(nm)+'</b><span class="muted">+228 '+esc(fmtPhone(S.prof.phone))+'</span><span class="muted">'+esc(S.sess.email||'')+'</span></div></div></div>'+
@@ -684,7 +709,7 @@ var T0=Date.now(),splashDone=false;
           '<h3 class="sec">Apparence</h3><div class="seg" role="group" aria-label="Thème">'+
           [['auto','Auto'],['light','Clair'],['dark','Sombre']].map(function(t){return '<button data-a="theme" data-id="'+t[0]+'" aria-pressed="'+(S.theme===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>'+
           '<h3 class="sec">Compte</h3><button class="btn ghost block" data-a="logout">Me déconnecter</button>'+
-          '<h3 class="sec">À propos</h3><div class="box about">'+markSvg(72)+logoText()+'<p class="hint">Version bêta</p></div>';
+          '<h3 class="sec">À propos</h3><div class="box about">'+markSvg(72)+logoText()+'<p class="hint">Version bêta</p></div>'+legalLink();
       }
       bot=tabs('me');
     }
@@ -733,6 +758,7 @@ var T0=Date.now(),splashDone=false;
     else if(f.password.length<8)err='Le mot de passe doit avoir au moins 8 caractères.';
     else if(up&&f.name.trim().length<2)err='Entrez votre nom.';
     else if(up&&digits(f.phone).length!==8)err='Le numéro de téléphone doit avoir 8 chiffres.';
+    else if(up&&!f.terms)err='Cochez la case pour accepter les conditions d’utilisation.';
     if(err){S.authErr=err;render();return;}
     S.busy=true;render();
     var p;
@@ -883,7 +909,7 @@ var T0=Date.now(),splashDone=false;
   function logout(){
     var tok=S.sess&&S.sess.access_token;
     if(tok)http(SB+'/auth/v1/logout',{method:'POST',headers:hdr({},tok)}).catch(function(){});
-    clearSession();S.draft=null;S.after=null;S.af={email:'',password:'',name:'',phone:'',area:''};
+    clearSession();S.draft=null;S.after=null;S.af={email:'',password:'',name:'',phone:'',area:'',terms:false};
     go('home');toast('Vous êtes déconnecté');
   }
 
@@ -898,6 +924,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='freset'){fReset();render();}
     else if(a==='fclear'){fReset();S.q='';S.cat='all';render();}
     else if(a==='reload'){S.listings=null;S.loadErr=false;render();loadListings();}
+    else if(a==='legal'){S.lback=(S.view==='legal')?S.lback:S.view;go('legal');}
     else if(a==='fav'){toggleFav(id);}
     else if(a==='loginFav'){S.after='favs';S.authMode='login';S.view='me';render();}
     else if(a==='seller'){
@@ -964,6 +991,7 @@ var T0=Date.now(),splashDone=false;
   $('#app').addEventListener('change',function(e){
     if(e.target.id==='f-photos'){addPhotos(e.target.files);e.target.value='';}
     else if(e.target.id==='d-nego'){S.draft.nego=e.target.checked;}
+    else if(e.target.id==='a-terms'){S.af.terms=e.target.checked;}
     else if(e.target.name==='reason'){S.rep.reason=e.target.value;S.rep.err='';var pe=document.querySelector('.err');if(pe&&S.view==='report')pe.remove();}
   });
 
