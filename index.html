@@ -87,7 +87,8 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .card-main{display:flex;flex-direction:column;width:100%;text-align:left}
 .tile{display:grid;place-items:center;aspect-ratio:1;max-width:100%;overflow:hidden;background-color:var(--tile);background-image:radial-gradient(var(--dot) 1.2px,transparent 1.5px);background-size:14px 14px;color:var(--ink)}
 .tile svg.i{width:44px;height:44px;stroke-width:1.5;opacity:.8}
-.t-v{--tile:var(--tile-v)} .t-e{--tile:var(--tile-e)} .t-s{--tile:var(--tile-s)} .t-o{--tile:var(--tile-o)}
+.t-v{--tile:var(--tile-v)} .t-e{--tile:var(--tile-e)} .t-s{--tile:var(--tile-s)} .t-o{--tile:var(--tile-o)} .t-t{--tile:var(--tile-s)} .t-m{--tile:var(--tile-v)} .t-a{--tile:var(--tile-o)} .t-b{--tile:var(--tile-e)}
+.ctl select{flex:1;min-width:0;width:100%;border:0;background:transparent;font:inherit;color:var(--ink);padding:12px;outline:none;height:48px}.finp{appearance:auto}
 .tile .ph{width:100%;height:100%;object-fit:cover;display:block}
 .info{padding:10px 12px 12px;display:grid;gap:2px}
 .name{font-weight:600;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
@@ -252,6 +253,9 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
 <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18l3 3 6.700-6.700a4 4 0 0 0 5-5l-2.500 2.500-2.400-.6-.6-2.400z"/></symbol>
 <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12 3l7 4v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7z"/><circle cx="12" cy="8" r="1.200"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.500" width="10" height="19" rx="2.500"/><path d="M11 18.500h2"/></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 16v-4l2-5h12l2 5v4zM4 16v2.500M20 16v2.500M4 12h16"/><circle cx="8" cy="14.500" r=".6"/><circle cx="16" cy="14.500" r=".6"/></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.500 6 11a6 6 0 0 1-12 0c0-4.500 6-11 6-11z"/></symbol>
 <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
 <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.500S4 15.800 4 9.800A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 8 2.200c0 6-8 10.700-8 10.700z"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.500 16.500 4.500 4.500"/></symbol>
@@ -278,11 +282,12 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
   var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuZGV2eWpucXV2ZGxnbHp6c2VrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NDUxNzUsImV4cCI6MjEwNzMyMTE3NX0.Wvr6u1WJDamAq9Zqf4l6qsl0pN4zRJi1jNNnvrMTD-A';
   var BUCKET='listing-photos';
   var PUB=SB+'/storage/v1/object/public/'+BUCKET+'/';
-  var CATS=[{id:'all',label:'Tout'},{id:'v',label:'Vêtements'},{id:'e',label:'Électro'},{id:'s',label:'Services'},{id:'o',label:'Autres'}];
-  var ICON={v:'shirt',e:'bolt',s:'wrench',o:'tag'};
+  var CATS=[{id:'all',label:'Tout'},{id:'v',label:'Vêtements'},{id:'e',label:'Électro'},{id:'t',label:'Téléphones'},{id:'m',label:'Maison'},{id:'a',label:'Véhicules'},{id:'b',label:'Beauté'},{id:'s',label:'Services'},{id:'o',label:'Autres'}];
+  var CITIES=['Lomé','Kpalimé','Atakpamé','Sokodé','Kara','Dapaong','Aného','Tsévié','Autre ville'],PAGE=40;
+  var ICON={v:'shirt',e:'bolt',t:'phone',m:'home',a:'car',b:'drop',s:'wrench',o:'tag'};
   var UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  var S={view:'home',cat:'all',q:'',fOpen:false,editId:null,draftSaved:null,isAdmin:false,adm:{data:null,loading:false,err:'',sel:null},favs:{},favsReady:false,lback:'me',sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
+  var S={view:'home',cat:'all',q:'',fOpen:false,editId:null,draftSaved:null,isAdmin:false,adm:{data:null,loading:false,err:'',sel:null},favs:{},favsReady:false,lback:'me',sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',fcity:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
     sess:null,prof:null,profReady:false,after:null,
     authMode:'login',af:{email:'',password:'',name:'',phone:'',area:'',terms:false},authErr:'',authMsg:'',busy:false,
     pf:{name:'',phone:'',area:''},pfErr:{},
@@ -389,6 +394,8 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
   }
 
   /* ---------- données ---------- */
+  function cityOpts(cur,all){return (all?'<option value="">Toutes les villes</option>':'')+CITIES.map(function(c){return '<option'+(cur===c?' selected':'')+'>'+c+'</option>';}).join('');}
+  function place(p){return [p.loc,p.city].filter(Boolean).join(', ');}
   function okAv(u){return (typeof u==='string'&&u.indexOf(PUB)===0)?u:'';}
   function avHtml(url,name,big){var i=esc((name||'').trim().charAt(0).toUpperCase()||'?');return '<span class="av'+(big?' big':'')+'">'+(url?'<img src="'+esc(url)+'" alt="" data-i="'+i+'">':i)+'</span>';}
   document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&t.dataset&&t.dataset.i!==undefined&&t.parentNode){t.parentNode.textContent=t.dataset.i;}},true);
@@ -397,7 +404,7 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
     var price=Number(l.price);if(!(price>0))return null;
     return {id:l.id,seller_id:l.seller_id,seller_name:String(l.seller_name||'Vendeur'),seller_avatar:okAv(l.seller_avatar),title:String(l.title||''),
       cat:ICON[l.category]?l.category:'o',cond:(l.condition==='Neuf'||l.condition==='Occasion')?l.condition:null,
-      price:price,nego:!!l.negotiable,desc:String(l.description||''),loc:String(l.area||''),created:l.created_at,
+      price:price,nego:!!l.negotiable,desc:String(l.description||''),loc:String(l.area||''),city:String(l.city||''),created:l.created_at,
       sold:l.status==='sold',photos:(Array.isArray(l.photos)?l.photos:[]).filter(function(u){return typeof u==='string'&&u.indexOf(PUB)===0;}).slice(0,4)};
   }
   var deepId=(function(){try{var a=new URLSearchParams(location.search).get('a')||'';return UUID.test(a)?a.toLowerCase():'';}catch(e){return '';}})();
@@ -410,23 +417,49 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
   function openDeep(){
     if(deepSeller&&S.listings!==null&&S.view==='home'){
       var ds=deepSeller;deepSeller='';
-      if((S.listings||[]).some(function(x){return x.seller_id===ds&&!x.sold;})){S.sid=ds;S.sback='home';S.view='seller';}
-      else setTimeout(function(){toast('Ce vendeur n’a pas d’annonce en ligne.');},300);
+      if((S.listings||[]).some(function(x){return x.seller_id===ds&&!x.sold;})){S.sid=ds;S.sback='home';S.view='seller';fetchSellerListings(ds);}
+      else qList('&seller_id=eq.'+ds+'&status=eq.active',0,60).then(function(rows){mergeRows(rows);if((S.listings||[]).some(function(x){return x.seller_id===ds&&!x.sold;})){S.sid=ds;S.sback='home';S.view='seller';render();}else toast('Ce vendeur n’a pas d’annonce en ligne.');}).catch(function(){toast('Ce vendeur n’a pas d’annonce en ligne.');});
       return;
     }
     if(!deepId||S.listings===null||S.view!=='home')return;
     var d=deepId;deepId='';
+    function show(l){
+      if(l&&!l.sold){S.pid=d;S.phIdx=0;S.from='home';S.view='detail';if(S.sess&&S.sess.uid!==l.seller_id)ensurePhone(l.seller_id);}
+      else setTimeout(function(){toast('Cette annonce n’est plus disponible.');},300);
+    }
     var l=getListing(d);
-    if(l&&!l.sold){S.pid=d;S.phIdx=0;S.from='home';S.view='detail';if(S.sess&&S.sess.uid!==l.seller_id)ensurePhone(l.seller_id);}
-    else setTimeout(function(){toast('Cette annonce n’est plus disponible.');},300);
+    if(l)show(l);
+    else qList('&id=eq.'+d+'&status=in.(active,sold)',0,1).then(function(rows){mergeRows(rows);show(getListing(d));render();}).catch(function(){show(null);});
+  }
+  var LSEL='id,seller_id,seller_name,title,category,condition,price,negotiable,description,area,photos,created_at,status';
+  function qList(extra,off,lim){
+    var q='&order=created_at.desc&limit='+lim+(off?'&offset='+off:'');
+    return rest('GET','/listings?select='+LSEL+',seller_avatar,city'+extra+q)
+      .catch(function(){return rest('GET','/listings?select='+LSEL+',seller_avatar'+extra+q);})
+      .catch(function(){return rest('GET','/listings?select='+LSEL+extra+q);});
+  }
+  function mergeRows(rows){
+    var add=(Array.isArray(rows)?rows:[]).map(clean).filter(Boolean),have={};
+    (S.listings||[]).forEach(function(x){have[x.id]=1;});
+    add=add.filter(function(x){return !have[x.id];});
+    S.listings=(S.listings||[]).concat(add);
   }
   function loadListings(){
-    S.loadErr=false;
-    var sel='id,seller_id,seller_name,title,category,condition,price,negotiable,description,area,photos,created_at,status',q='&status=in.(active,sold)&order=created_at.desc&limit=100';
-    return rest('GET','/listings?select='+sel+',seller_avatar'+q).catch(function(){return rest('GET','/listings?select='+sel+q);})
-      .then(function(rows){S.listings=(Array.isArray(rows)?rows:[]).map(clean).filter(Boolean);})
+    S.loadErr=false;S.off=0;S.more=false;
+    return qList('&status=in.(active,sold)',0,PAGE)
+      .then(function(rows){rows=Array.isArray(rows)?rows:[];S.off=rows.length;S.more=rows.length===PAGE;S.listings=rows.map(clean).filter(Boolean);})
       .catch(function(){S.loadErr=true;})
       .then(function(){openDeep();if(S.view==='home'||S.view==='me'||S.view==='detail'||S.view==='seller')render();hideSplash();});
+  }
+  function loadMore(){
+    if(S.moreBusy||!S.more)return;
+    S.moreBusy=true;renderGrid();
+    qList('&status=in.(active,sold)',S.off,PAGE).then(function(rows){
+      rows=Array.isArray(rows)?rows:[];S.off+=rows.length;S.more=rows.length===PAGE;mergeRows(rows);
+    }).catch(function(){toast('Chargement impossible. Réessayez.');}).then(function(){S.moreBusy=false;if(S.view==='home')renderGrid();});
+  }
+  function fetchSellerListings(sid){
+    qList('&seller_id=eq.'+encodeURIComponent(sid)+'&status=in.(active,sold)',0,60).then(function(rows){mergeRows(rows);if(S.view==='seller'&&S.sid===sid)render();}).catch(function(){});
   }
   try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
 var T0=Date.now(),splashDone=false;
@@ -467,11 +500,12 @@ var T0=Date.now(),splashDone=false;
           field('d-price','Prix',input('d-price',D.price,{im:'numeric',ph:'15 000',suffix:'FCFA',bad:DE.price}),DE.price)+
           '<label class="check"><input type="checkbox" id="d-nego"'+(D.nego?' checked':'')+'><span>Prix à débattre</span></label>'+
           field('d-desc','Description','<div class="ctl"><textarea id="d-desc" rows="3" maxlength="300" placeholder="Taille, marque, défauts, garantie…">'+esc(D.desc)+'</textarea></div>')+
+          field('d-city','Ville','<div class="ctl"><select id="d-city">'+cityOpts(D.city||'Lomé')+'</select></div>')+
           field('d-loc','Quartier',input('d-loc',D.loc,{max:40,ph:'Ex : Tokoin',bad:DE.loc}),DE.loc)+
           (isEdit?'':'<div class="box"><p class="muted">Publié sous le nom <b>'+esc(S.prof.name)+'</b>. Les membres connectés verront le +228 '+esc(fmtPhone(S.prof.phone))+'. Vous pouvez le modifier dans l’onglet Profil.</p></div>')+
           (S.sellErr?'<p class="err" role="alert" style="margin-top:12px">'+esc(S.sellErr)+'</p>':'');
   }
-  function newDraft(){return {photos:[],name:'',cat:'v',cond:'Occasion',price:'',nego:false,desc:'',loc:(S.prof&&S.prof.area)||lsGet('ec-area')||''};}
+  function newDraft(){return {photos:[],name:'',cat:'v',cond:'Occasion',price:'',nego:false,desc:'',loc:(S.prof&&S.prof.area)||lsGet('ec-area')||'',city:lsGet('ec-city')||'Lomé'};}
 
   /* ---------- morceaux d'interface ---------- */
   function markSvg(n){
@@ -584,17 +618,18 @@ var T0=Date.now(),splashDone=false;
   function card(p){
     var mine=S.sess&&S.sess.uid===p.seller_id;
     return '<article class="card">'+(mine?'':heartBtn(p.id))+'<button class="card-main" data-a="open" data-id="'+p.id+'"><span class="tile t-'+p.cat+'">'+tileIn(p)+'</span>'+
-      '<span class="info"><span class="price">'+fmt(p.price)+'</span><span class="name">'+esc(p.title)+'</span><span class="sub2">'+esc(p.loc)+(p.cond?' · '+esc(p.cond):'')+'</span>'+
+      '<span class="info"><span class="price">'+fmt(p.price)+'</span><span class="name">'+esc(p.title)+'</span><span class="sub2">'+esc(place(p))+(p.cond?' · '+esc(p.cond):'')+'</span>'+
       '<span class="sub2">'+esc(ago(p.created))+(mine?' · <b class="mine">Votre annonce</b>':'')+'</span></span></button></article>';
   }
-  function fCount(){return (S.sort!=='new'?1:0)+(S.cond!=='all'?1:0)+(S.pmin!==''||S.pmax!==''?1:0)+(S.farea.trim()?1:0);}
-  function fReset(){S.sort='new';S.cond='all';S.pmin='';S.pmax='';S.farea='';}
+  function fCount(){return (S.sort!=='new'?1:0)+(S.cond!=='all'?1:0)+(S.pmin!==''||S.pmax!==''?1:0)+(S.farea.trim()?1:0)+(S.fcity?1:0);}
+  function fReset(){S.sort='new';S.cond='all';S.pmin='';S.pmax='';S.farea='';S.fcity='';}
   function filterPanel(){
     function seg(a,cur,items){return '<div class="seg" role="group">'+items.map(function(i){return '<button data-a="'+a+'" data-id="'+i[0]+'" aria-pressed="'+(cur===i[0])+'">'+i[1]+'</button>';}).join('')+'</div>';}
     return '<div class="fpanel">'+
       '<div class="field"><label>Trier par</label>'+seg('fsort',S.sort,[['new','Récents'],['asc','Prix ↑'],['desc','Prix ↓']])+'</div>'+
       '<div class="field"><label>État</label>'+seg('fcond',S.cond,[['all','Tous'],['Neuf','Neuf'],['Occasion','Occasion']])+'</div>'+
       '<div class="field"><label>Prix (FCFA)</label><div class="prange"><input id="f-pmin" inputmode="numeric" placeholder="Min" aria-label="Prix minimum" value="'+esc(S.pmin)+'" maxlength="9" autocomplete="off"><span>–</span><input id="f-pmax" inputmode="numeric" placeholder="Max" aria-label="Prix maximum" value="'+esc(S.pmax)+'" maxlength="9" autocomplete="off"></div></div>'+
+      '<div class="field"><label for="f-city">Ville</label><div class="ctl"><select id="f-city">'+cityOpts(S.fcity,true)+'</select></div></div>'+
       '<div class="field"><label for="f-area">Quartier</label><input id="f-area" class="finp" placeholder="Ex : Tokoin" value="'+esc(S.farea)+'" maxlength="40" autocomplete="off"></div>'+
       '<button class="btn ghost block" data-a="freset">Effacer les filtres</button></div>';
   }
@@ -604,13 +639,13 @@ var T0=Date.now(),splashDone=false;
     var q=norm(S.q.trim());
     var qa=norm(S.farea.trim()),mn=S.pmin===''?null:+S.pmin,mx=S.pmax===''?null:+S.pmax;
     var list=(S.listings||[]).filter(function(p){return !p.sold&&(S.cat==='all'||p.cat===S.cat)&&(!q||norm(p.title).indexOf(q)>-1||norm(p.desc).indexOf(q)>-1||norm(p.loc).indexOf(q)>-1)&&
-      (S.cond==='all'||p.cond===S.cond)&&(mn===null||p.price>=mn)&&(mx===null||p.price<=mx)&&(!qa||norm(p.loc).indexOf(qa)>-1);});
+      (S.cond==='all'||p.cond===S.cond)&&(mn===null||p.price>=mn)&&(mx===null||p.price<=mx)&&(!qa||norm(p.loc).indexOf(qa)>-1)&&(!S.fcity||p.city===S.fcity);});
     if(S.sort==='asc')list.sort(function(a,b){return a.price-b.price;});else if(S.sort==='desc')list.sort(function(a,b){return b.price-a.price;});
     if(!list.length){
       if(!(S.listings||[]).filter(function(p){return !p.sold;}).length)return '<div class="empty">'+ico('tag')+'<h3>Aucune annonce pour l’instant</h3><p>Soyez le premier à publier !</p><button class="btn" data-a="tab" data-v="sell">Publier une annonce</button></div>';
-      return '<div class="empty">'+ico('search')+'<h3>Aucun résultat</h3><p>Essayez un autre mot, par exemple « robe » ou « ventilateur ».</p>'+((q||S.cat!=='all'||fCount())?'<button class="btn ghost" data-a="fclear">Tout effacer</button>':'')+'</div>';
+      return '<div class="empty">'+ico('search')+'<h3>Aucun résultat</h3><p>Essayez un autre mot, par exemple « robe » ou « ventilateur ».</p>'+((q||S.cat!=='all'||fCount())?'<button class="btn ghost" data-a="fclear">Tout effacer</button>':'')+(S.more?'<button class="btn ghost" style="margin-top:10px" data-a="more"'+(S.moreBusy?' disabled':'')+'>'+(S.moreBusy?'Chargement…':'Chercher parmi plus d’annonces')+'</button>':'')+'</div>';
     }
-    return ((q||S.cat!=='all'||fCount())?'<p class="muted cnt" role="status">'+list.length+(list.length>1?' annonces':' annonce')+'</p>':'')+'<div class="grid">'+list.map(card).join('')+'</div>';
+    return ((q||S.cat!=='all'||fCount())?'<p class="muted cnt" role="status">'+list.length+(list.length>1?' annonces':' annonce')+'</p>':'')+'<div class="grid">'+list.map(card).join('')+'</div>'+(S.more?'<button class="btn ghost block" style="margin:16px 0" data-a="more"'+(S.moreBusy?' disabled':'')+'>'+(S.moreBusy?'Chargement…':'Voir plus d’annonces')+'</button>':'');
   }
   function updF(){renderGrid();var c=$('#fcount');if(c){var n=fCount();c.textContent=n;c.hidden=!n;}}
   function renderGrid(){var g=$('#grid');if(g)g.innerHTML=gridHtml();}
@@ -704,7 +739,7 @@ var T0=Date.now(),splashDone=false;
       html='<div class="tile hero t-'+p.cat+'">'+tileIn(p,S.phIdx)+'</div>'+
         (n>1?'<div class="thumbs">'+p.photos.map(function(u,i){return '<button data-a="ph" data-id="'+i+'" aria-label="Photo '+(i+1)+'" aria-pressed="'+(S.phIdx===i)+'"><img src="'+esc(u)+'" alt=""></button>';}).join('')+'</div>':'')+
         '<div class="detail">'+(p.sold?'<p class="soldbar">Cette annonce est marquée comme vendue. Elle n’est plus visible par les autres.</p>':'')+'<div class="trow"><h1>'+esc(p.title)+'</h1>'+((S.sess&&S.sess.uid===p.seller_id)||p.sold?'':heartBtn(p.id))+'</div><div class="price">'+fmt(p.price)+(p.nego?' <small>· à débattre</small>':'')+'</div>'+
-        '<div class="tags">'+(p.cond?'<span class="tag">'+esc(p.cond)+'</span>':'')+'<span class="tag">'+esc(p.loc)+'</span><span class="tag">'+esc(ago(p.created))+'</span></div>'+
+        '<div class="tags">'+(p.cond?'<span class="tag">'+esc(p.cond)+'</span>':'')+'<span class="tag">'+esc(place(p))+'</span><span class="tag">'+esc(ago(p.created))+'</span></div>'+
         (p.desc?'<p>'+esc(p.desc)+'</p>':'')+((S.sess&&S.sess.uid===p.seller_id)?'<button class="btn ghost block" style="margin:14px 0 0" data-a="edit" data-id="'+p.id+'">Modifier l’annonce</button>':'')+
         (p.sold?'':'<div class="sharerow"><a class="btn wa" href="'+esc(shareHref(p))+'" target="_blank" rel="noopener noreferrer">Partager sur WhatsApp</a><button class="btn ghost" data-a="copylink" data-id="'+p.id+'">Copier le lien</button></div>')+sellerBox(p)+
         '<ul class="facts"><li>'+ico('check')+(p.cat==='s'?'Convenez du rendez-vous et du prix directement avec le vendeur.':'Remise en main propre ou livraison à convenir avec le vendeur.')+'</li>'+
@@ -966,10 +1001,10 @@ var T0=Date.now(),splashDone=false;
     var done=[];
     D.photos.reduce(function(chain,ph){return chain.then(function(){return upload(ph.blob).then(function(u){done.push(u);});});},Promise.resolve()).then(function(){
       return rest('POST','/listings',{seller_id:S.sess.uid,seller_name:S.prof.name,title:D.name.trim(),category:D.cat,condition:D.cat==='s'?null:D.cond,
-        price:price,negotiable:D.nego,description:D.desc.trim()||null,area:D.loc.trim(),photos:done},'return=representation');
+        price:price,negotiable:D.nego,description:D.desc.trim()||null,area:D.loc.trim(),city:D.city||'Lomé',photos:done},'return=representation');
     }).then(function(rows){
       var l=clean(rows&&rows[0]);if(l){S.listings=[l].concat(S.listings||[]);}
-      lsSet('ec-area',D.loc.trim());
+      lsSet('ec-area',D.loc.trim());lsSet('ec-city',D.city||'Lomé');
       D.photos.forEach(function(x){URL.revokeObjectURL(x.url);});
       S.draft=newDraft();S.derr={};S.cat='all';S.q='';S.busy=false;
       go('home');toast('Annonce publiée');
@@ -981,7 +1016,7 @@ var T0=Date.now(),splashDone=false;
   function startEdit(id){
     var l=getListing(id);if(!l||!S.sess||l.seller_id!==S.sess.uid||S.busy)return;
     S.draftSaved=S.draft;S.editId=id;S.derr={};S.sellErr='';
-    S.draft={photos:l.photos.map(function(u){return {url:u,remote:true};}),name:l.title,cat:l.cat,cond:l.cond||'Occasion',price:String(l.price),nego:!!l.nego,desc:l.desc||'',loc:l.loc||''};
+    S.draft={photos:l.photos.map(function(u){return {url:u,remote:true};}),name:l.title,cat:l.cat,cond:l.cond||'Occasion',price:String(l.price),nego:!!l.nego,desc:l.desc||'',loc:l.loc||'',city:l.city||'Lomé'};
     go('edit');
   }
   function leaveEdit(){
@@ -1006,7 +1041,7 @@ var T0=Date.now(),splashDone=false;
       return upload(ph.blob).then(function(u){uploaded.push(u);finals.push(u);});
     });},Promise.resolve()).then(function(){
       return rest('PATCH','/listings?id=eq.'+encodeURIComponent(id),{title:D.name.trim(),category:D.cat,condition:D.cat==='s'?null:D.cond,
-        price:price,negotiable:D.nego,description:D.desc.trim()||null,area:D.loc.trim(),photos:finals},'return=representation');
+        price:price,negotiable:D.nego,description:D.desc.trim()||null,area:D.loc.trim(),city:D.city||'Lomé',photos:finals},'return=representation');
     }).then(function(rows){
       var nl=clean(rows&&rows[0]);
       if(!nl)throw new Error('x');
@@ -1124,7 +1159,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='loginFav'){S.after='favs';S.authMode='login';S.view='me';render();}
     else if(a==='seller'){
       if(!UUID.test(id))return;
-      S.sid=id.toLowerCase();S.sback=S.view==='detail'?'detail':'home';S.sbackPid=S.view==='detail'?S.pid:null;S.from='home';go('seller');
+      S.sid=id.toLowerCase();S.sback=S.view==='detail'?'detail':'home';S.sbackPid=S.view==='detail'?S.pid:null;S.from='home';go('seller');fetchSellerListings(S.sid);
     }
     else if(a==='copyprof'){try{navigator.clipboard.writeText(sellerUrl(S.sid)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}
     else if(a==='open'){
@@ -1153,6 +1188,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='doDel'){delListing(id);}
     else if(a==='theme'){S.theme=id;lsSet('ec-theme',id);applyTheme();render();}
     else if(a==='logout'){logout();}
+    else if(a==='more'){loadMore();}
     else if(a==='askDelAcc'){S.delAcc=true;S.delTxt='';render();}
     else if(a==='cancelDelAcc'){S.delAcc=false;S.delTxt='';render();}
     else if(a==='doDelAcc'){deleteAccount();}
@@ -1193,6 +1229,8 @@ var T0=Date.now(),splashDone=false;
   $('#app').addEventListener('change',function(e){
     if(e.target.id==='f-avatar'){setAvatar(e.target.files&&e.target.files[0]);e.target.value='';}
     else if(e.target.id==='f-photos'){addPhotos(e.target.files);e.target.value='';}
+    else if(e.target.id==='d-city'){S.draft.city=e.target.value;}
+    else if(e.target.id==='f-city'){S.fcity=e.target.value;updF();}
     else if(e.target.id==='d-nego'){S.draft.nego=e.target.checked;}
     else if(e.target.id==='a-terms'){S.af.terms=e.target.checked;}
     else if(e.target.id==='adm-nocount'){lsSet('ec-nocount',e.target.checked?'1':'0');}
