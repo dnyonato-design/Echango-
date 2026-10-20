@@ -9,6 +9,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Échango">
+<meta property="og:title" content="Échango : achetez et vendez près de chez vous">
+<meta property="og:description" content="Vêtements, appareils, services… Publiez gratuitement et contactez les vendeurs directement sur WhatsApp.">
+<meta property="og:image" content="https://dnyonato-design.github.io/Echango-/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <title>Échango</title>
 <script>try{var t=localStorage.getItem('ec-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -393,10 +401,11 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
       sold:l.status==='sold',photos:(Array.isArray(l.photos)?l.photos:[]).filter(function(u){return typeof u==='string'&&u.indexOf(PUB)===0;}).slice(0,4)};
   }
   var deepId=(function(){try{var a=new URLSearchParams(location.search).get('a')||'';return UUID.test(a)?a.toLowerCase():'';}catch(e){return '';}})();
-  function shareUrl(p){return location.origin+location.pathname+'?a='+p.id;}
+  var SHARE_BASE='';
+  function shareUrl(p){return SHARE_BASE?SHARE_BASE+'/a/'+p.id:location.origin+location.pathname+'?a='+p.id;}
   function shareHref(p){return 'https://wa.me/?text='+encodeURIComponent('Regarde cette annonce sur Échango : '+p.title+' – '+fmt(p.price)+(p.loc?' ('+p.loc+')':'')+'\n'+shareUrl(p));}
   var deepSeller=(function(){try{var a=new URLSearchParams(location.search).get('v')||'';return UUID.test(a)?a.toLowerCase():'';}catch(e){return '';}})();
-  function sellerUrl(sid){return location.origin+location.pathname+'?v='+sid;}
+  function sellerUrl(sid){return SHARE_BASE?SHARE_BASE+'/v/'+sid:location.origin+location.pathname+'?v='+sid;}
   function shareProfileHref(sid,name,n){return 'https://wa.me/?text='+encodeURIComponent('Découvre les annonces de '+name+' sur Échango ('+n+' en ligne)\n'+sellerUrl(sid));}
   function openDeep(){
     if(deepSeller&&S.listings!==null&&S.view==='home'){
