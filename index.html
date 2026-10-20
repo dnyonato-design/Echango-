@@ -793,7 +793,7 @@ var T0=Date.now(),splashDone=false;
           profileForm('Mes informations')+
           '<h3 class="sec">Apparence</h3><div class="seg" role="group" aria-label="Thème">'+
           [['auto','Auto'],['light','Clair'],['dark','Sombre']].map(function(t){return '<button data-a="theme" data-id="'+t[0]+'" aria-pressed="'+(S.theme===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>'+
-          '<h3 class="sec">Compte</h3>'+(S.isAdmin?'<button class="btn block" data-a="admin" style="margin-bottom:10px">Tableau de bord</button>':'')+'<button class="btn ghost block" data-a="logout">Me déconnecter</button>'+
+          '<h3 class="sec">Compte</h3>'+(S.isAdmin?'<button class="btn block" data-a="admin" style="margin-bottom:10px">Tableau de bord</button>':'')+'<button class="btn ghost block" data-a="logout">Me déconnecter</button>'+delAccHtml()+
           '<h3 class="sec">À propos</h3><div class="box about">'+markSvg(72)+logoText()+'<p class="hint">Version bêta</p></div>'+legalLink();
       }
       bot=tabs('me');
@@ -805,7 +805,7 @@ var T0=Date.now(),splashDone=false;
 
   function go(v){
     if(S.view==='edit'&&v!=='edit')leaveEdit();
-    S.view=v;S.confirmDel=false;
+    S.view=v;S.confirmDel=false;S.delAcc=false;S.delTxt='';
     if(v==='sell'){
       if(!S.draft)S.draft=newDraft();
       else if(!S.draft.loc)S.draft.loc=(S.prof&&S.prof.area)||lsGet('ec-area')||'';
@@ -1064,6 +1064,31 @@ var T0=Date.now(),splashDone=false;
       S.rep.busy=false;S.rep.err=errMsg(e);render();
     });
   }
+  function delAccHtml(){
+    if(S.isAdmin)return '';
+    if(!S.delAcc)return '<button class="btn ghost block" style="margin-top:10px;color:var(--danger)" data-a="askDelAcc">Supprimer mon compte</button>';
+    var ok=(S.delTxt||'').trim().toUpperCase()==='SUPPRIMER';
+    return '<div class="box" style="margin-top:10px"><p><b>Supprimer votre compte ?</b></p><p class="muted" style="margin:6px 0 12px">Votre profil, toutes vos annonces, leurs photos et vos favoris seront effacés définitivement. Cette action est irréversible.</p>'+
+      field('d-conf','Tapez SUPPRIMER pour confirmer',input('d-conf',S.delTxt||'',{ac:'off',max:20,ph:'SUPPRIMER'}))+
+      '<div style="display:flex;gap:10px"><button class="btn ghost" data-a="cancelDelAcc">Annuler</button><button class="btn danger" id="d-go" data-a="doDelAcc"'+((ok&&!S.busy)?'':' disabled')+'>'+(S.busy?'Suppression…':'Supprimer')+'</button></div></div>';
+  }
+  function deleteAccount(){
+    if(S.busy||!S.sess||(S.delTxt||'').trim().toUpperCase()!=='SUPPRIMER')return;
+    S.busy=true;render();
+    var uid=S.sess.uid;
+    rest('GET','/listings?seller_id=eq.'+encodeURIComponent(uid)+'&select=photos').catch(function(){return (S.listings||[]).filter(function(l){return l.seller_id===uid;});})
+    .then(function(rows){
+      var urls=[];(rows||[]).forEach(function(r){(Array.isArray(r.photos)?r.photos:[]).forEach(function(u){urls.push(u);});});
+      if(S.prof&&S.prof.avatar_url)urls.push(S.prof.avatar_url);
+      return removePhotos(urls);
+    }).then(function(){return rest('POST','/rpc/delete_my_account',{});})
+    .then(function(){
+      clearSession();S.draft=null;S.after=null;S.busy=false;S.delAcc=false;S.delTxt='';
+      S.af={email:'',password:'',name:'',phone:'',area:'',terms:false};
+      S.listings=(S.listings||[]).filter(function(l){return l.seller_id!==uid;});
+      go('home');toast('Votre compte a été supprimé');
+    }).catch(function(){S.busy=false;toast('Suppression impossible. Réessayez plus tard.');if(S.view==='me')render();});
+  }
   function logout(){
     var tok=S.sess&&S.sess.access_token;
     if(tok)http(SB+'/auth/v1/logout',{method:'POST',headers:hdr({},tok)}).catch(function(){});
@@ -1119,6 +1144,9 @@ var T0=Date.now(),splashDone=false;
     else if(a==='doDel'){delListing(id);}
     else if(a==='theme'){S.theme=id;lsSet('ec-theme',id);applyTheme();render();}
     else if(a==='logout'){logout();}
+    else if(a==='askDelAcc'){S.delAcc=true;S.delTxt='';render();}
+    else if(a==='cancelDelAcc'){S.delAcc=false;S.delTxt='';render();}
+    else if(a==='doDelAcc'){deleteAccount();}
   });
   $('#app').addEventListener('submit',function(e){
     e.preventDefault();
@@ -1138,6 +1166,7 @@ var T0=Date.now(),splashDone=false;
     else if(id==='p-name'){S.pf.name=t.value;clearErr(t,S.pfErr,'name');}
     else if(id==='p-phone'){S.pf.phone=t.value;clearErr(t,S.pfErr,'phone');}
     else if(id==='p-area')S.pf.area=t.value;
+    else if(id==='d-conf'){S.delTxt=t.value;var gb=document.getElementById('d-go');if(gb)gb.disabled=!(t.value.trim().toUpperCase()==='SUPPRIMER'&&!S.busy);}
     else if(id==='r-pw')S.rv.pw=t.value;
     else if(id==='r-pw2')S.rv.pw2=t.value;
     else if(id==='r-details')S.rep.details=t.value;
