@@ -401,7 +401,7 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
       sold:l.status==='sold',photos:(Array.isArray(l.photos)?l.photos:[]).filter(function(u){return typeof u==='string'&&u.indexOf(PUB)===0;}).slice(0,4)};
   }
   var deepId=(function(){try{var a=new URLSearchParams(location.search).get('a')||'';return UUID.test(a)?a.toLowerCase():'';}catch(e){return '';}})();
-  var SHARE_BASE='';
+  var SHARE_BASE='https://echango-share.dnyonato.workers.dev';
   function shareUrl(p){return SHARE_BASE?SHARE_BASE+'/a/'+p.id:location.origin+location.pathname+'?a='+p.id;}
   function shareHref(p){return 'https://wa.me/?text='+encodeURIComponent('Regarde cette annonce sur Échango : '+p.title+' – '+fmt(p.price)+(p.loc?' ('+p.loc+')':'')+'\n'+shareUrl(p));}
   var deepSeller=(function(){try{var a=new URLSearchParams(location.search).get('v')||'';return UUID.test(a)?a.toLowerCase():'';}catch(e){return '';}})();
