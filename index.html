@@ -562,7 +562,7 @@ var T0=Date.now(),splashDone=false;
       var vid=lsGet('ec-vid');
       if(!vid){vid=uuid4();lsSet('ec-vid',vid);}
       if(lsGet('ec-vid')!==vid)return;
-      rest('POST','/visits?on_conflict=day,vid',{vid:vid},'resolution=ignore-duplicates').then(function(){lsSet('ec-vday',today);}).catch(function(){});
+      rest('POST','/visits',{vid:vid}).then(function(){lsSet('ec-vday',today);}).catch(function(e){if(e&&e.status===409)lsSet('ec-vday',today);});
     }catch(e){}
   }
   function checkAdmin(){
