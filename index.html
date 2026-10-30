@@ -290,6 +290,19 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 .dr-foot{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
 .infoc{display:grid;gap:12px}.infoc h3{font-size:16px}.infoc p,.infoc li{color:var(--ink)}.infoc ol,.infoc ul{margin:0;padding-left:20px;display:grid;gap:8px}
 .infoc .qa{padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}.infoc .qa b{display:block;margin-bottom:4px}
+
+/* profil */
+.pbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}.pbar i{display:block;height:100%;background:var(--green);border-radius:99px}
+.pcomp{margin-top:14px;font-size:13px}.pcomp b{font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{padding:12px 6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);text-align:center;min-width:0}
+.stat b{display:block;font-family:var(--display);font-size:22px;color:var(--brand);line-height:1.1}.stat span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.rem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border-radius:12px;background:var(--tile-v);margin-bottom:8px;font-size:14px;line-height:1.3}
+.rem.warn{background:#FDEBD0;color:#5A3A00}
+[data-theme="dark"] .rem.warn{background:#4A3510;color:#FFE3B0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rem.warn{background:#4A3510;color:#FFE3B0}}
+.rem svg.i{width:18px;height:18px;flex:none}.rem span{flex:1;min-width:0}
+.mstat{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
 </style>
 </head>
 <body>
@@ -423,7 +436,7 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
     S.sess={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:exp,uid:d.user&&d.user.id,email:d.user&&d.user.email};
     lsSet('ec-session',JSON.stringify(S.sess));
   }
-  function clearSession(){S.mineLoaded=false;S.isAdmin=false;S.favs={};S.favsReady=false;S.sess=null;S.prof=null;S.profReady=false;S.phones={};lsDel('ec-session');}
+  function clearSession(){S.stats=null;S.statsAt=0;S.statsOk=null;S.mineLoaded=false;S.isAdmin=false;S.favs={};S.favsReady=false;S.sess=null;S.prof=null;S.profReady=false;S.phones={};lsDel('ec-session');}
   var refreshing=null;
   function refresh(){
     if(refreshing)return refreshing;
@@ -548,7 +561,7 @@ var T0=Date.now(),splashDone=false;
   setTimeout(hideSplash,4000);
   function loadProfile(){
     if(!S.sess)return Promise.resolve();
-    var pq='/profiles?id=eq.'+encodeURIComponent(S.sess.uid)+'&select=id,name,phone,area';
+    var pq='/profiles?id=eq.'+encodeURIComponent(S.sess.uid)+'&select=id,name,phone,area,created_at';
     return rest('GET',pq+',avatar_url').catch(function(){return rest('GET',pq);}).then(function(rows){
       S.prof=(rows&&rows[0])||null;S.profReady=true;
       if(S.prof&&!S.mineLoaded){S.mineLoaded=true;fetchSellerListings(S.sess.uid);}
@@ -647,6 +660,64 @@ var T0=Date.now(),splashDone=false;
   function uuid4(){
     try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}
     return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g,function(){return Math.floor(Math.random()*16).toString(16);});
+  }
+  function evTrack(id,kind){
+    try{
+      if(!UUID.test(id)||lsGet('ec-nocount')==='1')return;
+      var l=getListing(id);if(!l||(S.sess&&S.sess.uid===l.seller_id))return;
+      var today=new Date().toISOString().slice(0,10),c;
+      try{c=JSON.parse(lsGet('ec-ev')||'null');}catch(e){c=null;}
+      if(!c||c.d!==today)c={d:today,k:{}};
+      var key=id+kind;if(c.k[key])return;
+      var vid=lsGet('ec-vid');if(!vid){vid=uuid4();lsSet('ec-vid',vid);}
+      c.k[key]=1;lsSet('ec-ev',JSON.stringify(c));
+      rest('POST','/listing_events',{listing_id:id,kind:kind,vid:vid}).catch(function(){});
+    }catch(e){}
+  }
+  function loadStats(){
+    if(!S.sess||S.statsLoading||(S.statsAt&&Date.now()-S.statsAt<30000))return;
+    S.statsLoading=true;
+    rest('POST','/rpc/my_stats',{}).then(function(r){
+      var m={};(Array.isArray(r)?r:[]).forEach(function(x){if(x&&typeof x.id==='string')m[x.id]={v:+x.views||0,c:+x.contacts||0,f:+x.favs||0};});
+      S.stats=m;S.statsOk=true;
+    }).catch(function(){S.statsOk=false;}).then(function(){
+      S.statsLoading=false;S.statsAt=Date.now();
+      if(S.view==='me'||S.view==='mine'||S.view==='detail')render();
+    });
+  }
+  function st1(id){return (S.stats&&S.stats[id])||{v:0,c:0,f:0};}
+  function stLine(id){if(!S.statsOk)return '';var t=st1(id);return t.v+(t.v>1?' vues':' vue')+' · '+t.c+(t.c>1?' contacts':' contact')+' · '+t.f+(t.f>1?' favoris':' favori');}
+  function mineList(){return (S.listings||[]).filter(function(x){return S.sess&&x.seller_id===S.sess.uid;});}
+  function completeness(){
+    var pr=S.prof||{},m=mineList(),sc=40,tips=[];
+    if(okAv(pr.avatar_url))sc+=25;else tips.push('Ajoutez une photo de profil.');
+    if(pr.area&&pr.area.trim())sc+=15;else tips.push('Indiquez votre quartier habituel.');
+    if(m.length)sc+=20;else tips.push('Publiez votre première annonce.');
+    return {pct:sc,tip:tips[0]||''};
+  }
+  function statsHtml(){
+    var m=mineList(),live_=m.filter(live).length,sold=m.filter(function(x){return x.sold;}).length,exp=m.filter(function(x){return x.expired&&!x.sold;}).length,v=0,c=0,f=0;
+    m.forEach(function(x){var t=st1(x.id);v+=t.v;c+=t.c;f+=t.f;});
+    function tile(n,l){return '<div class="stat"><b>'+n+'</b><span>'+l+'</span></div>';}
+    return '<h3 class="sec">Mes statistiques</h3><div class="stats">'+tile(live_,'En ligne')+tile(sold,'Vendues')+tile(exp,'Expirées')+
+      (S.statsOk?tile(v,'Vues')+tile(c,'Contacts')+tile(f,'Favoris'):'')+'</div>'+
+      (S.statsOk?'<p class="hint">Vues et contacts : visiteurs différents, comptés une fois par jour et par appareil. Vos propres visites ne comptent pas.</p>':'');
+  }
+  function remindersHtml(){
+    var m=mineList().filter(function(x){return !x.sold;}),out=[];
+    m.forEach(function(x){
+      var age=Date.now()-Date.parse(x.bumped),left=Math.ceil((EXPIRE_MS-age)/86400000);
+      if(x.expired)out.push(['warn',esc(x.title)+' a expiré : remettez-la en ligne.',x.id]);
+      else if(left<=5)out.push(['warn',esc(x.title)+' expire dans '+Math.max(left,1)+(left>1?' jours':' jour')+'.',x.id]);
+      else if(age>=BUMP_MS)out.push(['',esc(x.title)+' peut être remontée en tête de liste.',x.id]);
+    });
+    if(!out.length)return '';
+    return '<h3 class="sec">Rappels</h3>'+out.slice(0,4).map(function(r){return '<button class="rem '+r[0]+'" data-a="open" data-id="'+r[2]+'">'+ico(r[0]?'info':'sliders').replace('class="i"','class="i"')+'<span>'+r[1]+'</span>'+ico('chev')+'</button>';}).join('');
+  }
+  function memberSince(){
+    var d=S.prof&&S.prof.created_at?new Date(S.prof.created_at):null;
+    if(!d||isNaN(d))return '';
+    try{return 'Membre depuis '+d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}catch(e){return '';}
   }
   function trackVisit(){
     try{
@@ -834,7 +905,7 @@ var T0=Date.now(),splashDone=false;
       bot=tabs('home');
     }
     else if(v==='detail'){
-      var p=getListing(S.pid),n=p.photos.length;
+      var p=getListing(S.pid),n=p.photos.length;evTrack(p.id,'view');if(S.sess&&S.sess.uid===p.seller_id)loadStats();
       top=backBar('Annonce',S.from==='seller'&&S.sid?'seller':'home');
       html='<div class="tile hero t-'+p.cat+'">'+tileIn(p,S.phIdx)+'</div>'+
         (n>1?'<div class="thumbs">'+p.photos.map(function(u,i){return '<button data-a="ph" data-id="'+i+'" aria-label="Photo '+(i+1)+'" aria-pressed="'+(S.phIdx===i)+'"><img src="'+esc(u)+'" alt=""></button>';}).join('')+'</div>':'')+
@@ -859,7 +930,8 @@ var T0=Date.now(),splashDone=false;
       if(g!==null)html=g;
       else{
         var mn=(S.listings||[]).filter(function(x){return x.seller_id===S.sess.uid;});
-        html=(mn.length?mn.map(function(x){return '<button class="mrow" data-a="open" data-id="'+x.id+'"><span class="tile t-'+x.cat+'">'+tileIn(x)+'</span><span class="mi"><b>'+esc(x.title)+'</b><span class="price">'+fmt(x.price)+(x.sold?' <span class="soldb">Vendu</span>':(x.expired?' <span class="soldb">Expirée</span>':''))+'</span></span></button>';}).join(''):
+        loadStats();
+        html=(mn.length?mn.map(function(x){return '<button class="mrow" data-a="open" data-id="'+x.id+'"><span class="tile t-'+x.cat+'">'+tileIn(x)+'</span><span class="mi"><b>'+esc(x.title)+'</b><span class="price">'+fmt(x.price)+(x.sold?' <span class="soldb">Vendu</span>':(x.expired?' <span class="soldb">Expirée</span>':''))+'</span>'+(S.statsOk?'<span class="mstat">'+stLine(x.id)+'</span>':'')+'</span></button>';}).join(''):
           '<div class="empty">'+ico('tag')+'<h3>Aucune annonce</h3><p>Vous n’avez rien publié pour l’instant.</p><button class="btn" data-a="tab" data-v="sell">Publier une annonce</button></div>');
       }
       bot=tabs('me');
@@ -942,12 +1014,15 @@ var T0=Date.now(),splashDone=false;
     }
     else if(v==='me'){
       top='<div class="bar"><h2>Profil</h2></div>';
+      if(S.sess&&S.prof)loadStats();
       g=gate('Connectez-vous pour publier, suivre vos annonces et contacter les vendeurs.');
       if(g!==null)html=g+legalLink();
       else{
         var mine=(S.listings||[]).filter(function(x){return x.seller_id===S.sess.uid;}),nm=S.prof.name.trim();
-        html='<div class="box seller"><div class="who">'+avHtml(S.prof.avatar_url&&okAv(S.prof.avatar_url),nm,true)+'<div><b>'+esc(nm)+'</b><span class="muted">'+esc(S.sess.email||'')+'</span></div></div>'+
-          '<div class="avedit"><label class="btn ghost" for="f-avatar" role="button">'+(S.avBusy?'Envoi…':(okAv(S.prof.avatar_url)?'Changer la photo':'Ajouter une photo'))+'</label><input id="f-avatar" class="vh2" type="file" accept="image/*"'+(S.avBusy?' disabled':'')+'>'+(okAv(S.prof.avatar_url)&&!S.avBusy?'<button class="btn ghost" data-a="rmav">Retirer</button>':'')+'</div></div>'+
+        html='<div class="box seller"><div class="who">'+avHtml(S.prof.avatar_url&&okAv(S.prof.avatar_url),nm,true)+'<div><b>'+esc(nm)+'</b><span class="muted">'+esc(S.sess.email||'')+'</span>'+(memberSince()?'<span class="muted">'+esc(memberSince())+'</span>':'')+'</div></div>'+
+          '<div class="avedit"><label class="btn ghost" for="f-avatar" role="button">'+(S.avBusy?'Envoi…':(okAv(S.prof.avatar_url)?'Changer la photo':'Ajouter une photo'))+'</label><input id="f-avatar" class="vh2" type="file" accept="image/*"'+(S.avBusy?' disabled':'')+'>'+(okAv(S.prof.avatar_url)&&!S.avBusy?'<button class="btn ghost" data-a="rmav">Retirer</button>':'')+'</div>'+
+          (function(){var c=completeness();return '<div class="pcomp"><b>Profil complété à '+c.pct+' %</b><div class="pbar" role="progressbar" aria-valuenow="'+c.pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+c.pct+'%"></i></div>'+(c.tip?'<p class="hint" style="margin-top:6px">'+c.tip+'</p>':'')+'</div>';})()+'</div>'+
+          statsHtml()+remindersHtml()+
           '<div class="sharerow" style="margin:14px 0 0"><button class="btn ghost" data-a="go" data-v="mine">Mes annonces ('+mine.length+')</button><button class="btn ghost" data-a="go" data-v="favs">Mes favoris</button></div>'+
           profileForm('Mes informations')+
           '<h3 class="sec">Compte</h3><button class="btn ghost block" data-a="logout">Me déconnecter</button>'+delAccHtml()+legalLink();
@@ -1216,7 +1291,7 @@ var T0=Date.now(),splashDone=false;
     });
   }
   function ownerBox(p){
-    var h='',age=Date.now()-Date.parse(p.bumped),left=Math.max(0,Math.ceil((EXPIRE_MS-age)/86400000)),wait=Math.max(0,Math.ceil((BUMP_MS-age)/86400000));
+    var h=S.statsOk?'<p class="muted" style="margin:14px 0 0">'+stLine(p.id)+'</p>':'',age=Date.now()-Date.parse(p.bumped),left=Math.max(0,Math.ceil((EXPIRE_MS-age)/86400000)),wait=Math.max(0,Math.ceil((BUMP_MS-age)/86400000));
     if(!p.sold){
       if(p.expired)h+='<p class="soldbar" style="margin-top:14px">Cette annonce a expiré après 30 jours : elle n’est plus visible par les autres.</p><button class="btn block" data-a="bump" data-id="'+p.id+'"'+(S.busy?' disabled':'')+'>Remettre en ligne</button>';
       else{
@@ -1327,6 +1402,7 @@ var T0=Date.now(),splashDone=false;
   }
 
   $('#app').addEventListener('click',function(e){
+    var wa=e.target.closest('a[href^="https://wa.me/228"]');if(wa&&S.pid&&S.view==='detail')evTrack(S.pid,'contact');
     var b=e.target.closest('[data-a]');if(!b)return;
     var a=b.dataset.a,id=b.dataset.id,v=b.dataset.v;
     if(S.menu&&a!=='menu'&&a!=='msec'&&a!=='theme'){S.menu=false;renderDrawer();}
@@ -1372,7 +1448,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='delph'){var r=S.draft.photos.splice(+id,1)[0];if(r)URL.revokeObjectURL(r.url);render();}
     else if(a==='publish'){publish();}
     else if(a==='copylink'){var lk=getListing(id);if(lk){try{navigator.clipboard.writeText(shareUrl(lk)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}}
-    else if(a==='copy'){try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
+    else if(a==='copy'){if(S.pid)evTrack(S.pid,'contact');try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
     else if(a==='edit'){startEdit(id);}
     else if(a==='saveedit'){saveEdit();}
     else if(a==='sold'||a==='unsold'){setSold(id,a==='sold');}
