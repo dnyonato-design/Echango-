@@ -243,11 +243,18 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 .cat svg.i{width:24px;height:24px}
 .cat[aria-pressed="true"] .ci{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);box-shadow:0 4px 12px rgba(10,85,196,.35)}
 .cat[aria-pressed="true"]{color:var(--brand)}
-.sellcta{background:linear-gradient(135deg,#0A4CB0 0%,#1E7BE8 100%);color:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 18px rgba(10,85,196,.28)}
-.sellcta b{font-size:18px;color:#fff}.sellcta .muted{color:rgba(255,255,255,.85)}
-.sellcta .btn{background:var(--green);color:var(--green-ink)}
-[data-theme="dark"] .sellcta{background:linear-gradient(135deg,#143B7C 0%,#1F5BB5 100%)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sellcta{background:linear-gradient(135deg,#143B7C 0%,#1F5BB5 100%)}}
+.hban{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:18px 16px;border-radius:20px;color:#fff;margin-bottom:12px;background:linear-gradient(135deg,#0A4CB0 0%,#1E7BE8 100%);box-shadow:0 6px 18px rgba(10,85,196,.28)}
+[data-theme="dark"] .hban{background:linear-gradient(135deg,#143B7C 0%,#1F5BB5 100%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hban{background:linear-gradient(135deg,#143B7C 0%,#1F5BB5 100%)}}
+.hban .tx{display:grid;gap:10px;justify-items:start;min-width:0;flex:1 1 55%;position:relative;z-index:1}
+.hban b{font-family:var(--display);font-size:19px;line-height:1.15}
+.hban .btn{flex:none;height:40px;padding:0 16px;font-size:14px;background:var(--green);color:var(--green-ink)}
+.hban .art{position:relative;flex:0 0 40%;height:104px}
+.hban .art span{position:absolute;width:58px;height:58px;border-radius:18px;background:rgba(255,255,255,.95);color:#0A55C4;display:grid;place-items:center;box-shadow:0 6px 14px rgba(0,0,0,.18)}
+.hban .art span:nth-child(1){left:2px;top:6px;transform:rotate(-8deg)}
+.hban .art span:nth-child(2){right:4px;top:0;transform:rotate(7deg)}
+.hban .art span:nth-child(3){left:34%;bottom:0;transform:rotate(-3deg);background:var(--green);color:#fff}
+.hban .art svg.i{width:28px;height:28px}
 .card{border-radius:18px;box-shadow:0 2px 10px rgba(16,32,58,.06)}
 .card .tile{position:relative}
 .badge{position:absolute;left:8px;bottom:8px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--green);color:var(--green-ink);z-index:1}
@@ -786,6 +793,7 @@ var T0=Date.now(),splashDone=false;
       html='<div class="srow"><div class="search">'+ico('search')+'<input id="q" type="search" aria-label="Rechercher" placeholder="Rechercher une annonce" value="'+esc(S.q)+'" autocomplete="off"></div>'+
           '<button class="fbtn" data-a="ftoggle" aria-expanded="'+S.fOpen+'" aria-label="Filtres">'+ico('sliders')+'<span id="fcount" class="fc"'+(fCount()?'':' hidden')+'>'+fCount()+'</span></button></div>'+(S.fOpen?filterPanel():'')+
         '<div class="cats" role="group" aria-label="Catégories">'+CATS.map(function(c){var ic=c.id==='all'?'grid':(c.id==='o'?'dots':ICON[c.id]);return '<button class="cat" data-a="cat" data-id="'+c.id+'" aria-pressed="'+(S.cat===c.id)+'"><span class="ci">'+ico(ic)+'</span><span>'+c.label+'</span></button>';}).join('')+'</div>'+
+        '<div class="hban"><div class="tx"><b>Des bonnes affaires près de chez toi !</b><button class="btn" data-a="togrid">Voir les annonces</button></div><div class="art" aria-hidden="true"><span>'+ico('shirt')+'</span><span>'+ico('phone')+'</span><span>'+ico('bolt')+'</span></div></div>'+
         '<div class="sellcta"><div><b>Vous avez quelque chose à vendre ?</b><span class="muted">Publiez une annonce en deux minutes.</span></div><button class="btn" data-a="tab" data-v="sell">Publier</button></div>'+
         '<div id="grid">'+gridHtml()+'</div>';
       bot=tabs('home');
@@ -1272,6 +1280,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='doDel'){delListing(id);}
     else if(a==='theme'){S.theme=id;lsSet('ec-theme',id);applyTheme();render();}
     else if(a==='logout'){logout();}
+    else if(a==='togrid'){var gg=$('#grid');if(gg)gg.scrollIntoView({behavior:'smooth',block:'start'});}
     else if(a==='stepnext'){stepNext();}
     else if(a==='stepback'){stepBack();}
     else if(a==='more'){loadMore();}
