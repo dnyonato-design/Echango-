@@ -315,6 +315,21 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 .rq{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--line);color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .ract{display:flex;gap:8px;margin-top:12px}.ract .btn{flex:1;height:42px;padding:0 8px;font-size:14px}
 .rconf{margin-top:12px}.rconf p{font-size:14px;margin-bottom:8px}
+
+/* profil vendeur */
+.sban{border-radius:22px;padding:20px 16px 16px;color:#fff;background:linear-gradient(135deg,#0A4CB0 0%,#1E7BE8 100%);box-shadow:0 6px 18px rgba(10,85,196,.25);text-align:center;margin-bottom:12px}
+[data-theme="dark"] .sban{background:linear-gradient(135deg,#143B7C 0%,#1F5BB5 100%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sban{background:linear-gradient(135deg,#143B7C 0%,#1F5BB5 100%)}}
+.sban .av{width:84px;height:84px;font-size:32px;margin:0 auto 10px;border:4px solid rgba(255,255,255,.9);background:#fff;color:#0A55C4}
+.sban h2{font-size:22px;color:#fff}.sban p{color:rgba(255,255,255,.9);font-size:14px;margin-top:2px}
+.sstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.sstats div{background:rgba(255,255,255,.16);border-radius:14px;padding:10px 4px}.sstats b{display:block;font-family:var(--display);font-size:20px}.sstats span{font-size:12px;opacity:.92}
+.sact{display:flex;gap:8px;margin-bottom:12px}.sact .btn{flex:1;min-width:0;height:46px;font-size:14px}
+.stabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin:6px 0 12px}
+.stabs button{height:40px;border-radius:10px;font-size:14px;font-weight:600;color:var(--muted)}.stabs button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.sold-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:0;opacity:.92}
+.sold-card .tile{position:relative}.sold-card .tile .ph{filter:grayscale(.6)}
+.sold-card .badge{background:var(--ink);color:var(--bg)}
 </style>
 </head>
 <body>
@@ -385,7 +400,7 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
   var UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   var S={view:'home',cat:'all',q:'',fOpen:false,editId:null,draftSaved:null,isAdmin:false,adm:{data:null,loading:false,err:'',sel:null},favs:{},favsReady:false,lback:'me',sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',fcity:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
-    sess:null,prof:null,profReady:false,after:null,
+    sess:null,prof:null,profReady:false,since:{},stab:'on',after:null,
     authMode:'login',af:{email:'',password:'',name:'',phone:'',area:'',terms:false},authErr:'',authMsg:'',busy:false,
     pf:{name:'',phone:'',area:''},pfErr:{},
     draft:null,derr:{},sellErr:'',phones:{},theme:'auto',
@@ -449,7 +464,7 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
     S.sess={access_token:d.access_token,refresh_token:d.refresh_token,expires_at:exp,uid:d.user&&d.user.id,email:d.user&&d.user.email};
     lsSet('ec-session',JSON.stringify(S.sess));
   }
-  function clearSession(){S.stats=null;S.statsAt=0;S.statsOk=null;S.mineLoaded=false;S.isAdmin=false;S.favs={};S.favsReady=false;S.sess=null;S.prof=null;S.profReady=false;S.phones={};lsDel('ec-session');}
+  function clearSession(){S.stats=null;S.statsAt=0;S.statsOk=null;S.mineLoaded=false;S.isAdmin=false;S.favs={};S.favsReady=false;S.sess=null;S.prof=null;S.profReady=false;S.phones={};S.since={};lsDel('ec-session');}
   var refreshing=null;
   function refresh(){
     if(refreshing)return refreshing;
@@ -584,9 +599,10 @@ var T0=Date.now(),splashDone=false;
   function ensurePhone(sid){
     if(!S.sess||S.phones[sid]!==undefined)return;
     S.phones[sid]='loading';
-    rest('GET','/profiles?id=eq.'+encodeURIComponent(sid)+'&select=phone').then(function(rows){
+    rest('GET','/profiles?id=eq.'+encodeURIComponent(sid)+'&select=phone,created_at').then(function(rows){
       var p=rows&&rows[0]&&digits(rows[0].phone);S.phones[sid]=(p&&p.length===8)?p:null;
-    }).catch(function(){delete S.phones[sid];S.phones[sid]=null;}).then(function(){if(S.view==='detail'&&S.pid)render();});
+      if(rows&&rows[0]&&rows[0].created_at)S.since[sid]=rows[0].created_at;
+    }).catch(function(){delete S.phones[sid];S.phones[sid]=null;}).then(function(){if((S.view==='detail'&&S.pid)||(S.view==='seller'&&S.sid))render();});
   }
   function getListing(id){return (S.listings||[]).filter(function(x){return x.id===id;})[0]||null;}
   function stepBar(n){
@@ -1019,17 +1035,31 @@ var T0=Date.now(),splashDone=false;
       bot=tabs('favs');
     }
     else if(v==='seller'){
-      var sl=(S.listings||[]).filter(function(x){return x.seller_id===S.sid&&live(x);});
+      var all=(S.listings||[]).filter(function(x){return x.seller_id===S.sid;}),sl=all.filter(live),sd=all.filter(function(x){return x.sold;});
       top=backBar('Profil vendeur',S.sback==='detail'&&getListing(S.pid)?'detail':'home');
-      if(!sl.length){
+      if(S.sess&&S.sess.uid!==S.sid&&S.profReady)ensurePhone(S.sid);
+      if(!sl.length&&!sd.length){
         html='<div class="empty">'+ico('user')+'<h3>Aucune annonce en ligne</h3><p>Ce vendeur n’a pas d’annonce active pour le moment.</p><button class="btn" data-a="go" data-v="home">Voir les annonces</button></div>';
       }else{
-        var sn=sl[0].seller_name,areas=[];
+        var ref=(sl[0]||sd[0]),sn=ref.seller_name,areas=[];
         sl.forEach(function(x){if(x.loc&&areas.indexOf(x.loc)<0)areas.push(x.loc);});
-        var me=S.sess&&S.sess.uid===S.sid;
-        html='<div class="box seller"><div class="who">'+avHtml(sl[0].seller_avatar,sn,true)+'<div><b>'+esc(sn)+(me?' <span class="mine">(vous)</span>':'')+'</b><span class="muted">'+esc(areas.slice(0,3).join(' · ')||'Lomé')+'</span><span class="muted">'+sl.length+(sl.length>1?' annonces en ligne':' annonce en ligne')+'</span></div></div>'+
-          '<div class="sharerow" style="margin:0"><a class="btn wa" href="'+esc(shareProfileHref(S.sid,sn,sl.length))+'" target="_blank" rel="noopener noreferrer">Partager ce profil</a><button class="btn ghost" data-a="copyprof">Copier le lien</button></div></div>'+
-          '<h3 class="sec">Annonces de '+esc(sn)+'</h3><div class="grid">'+sl.map(card).join('')+'</div>';
+        var me=S.sess&&S.sess.uid===S.sid,ph=S.phones[S.sid],sinceTxt='';
+        function mfmt(t){try{return new Date(t).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}catch(e){return '';}}
+        if(S.since[S.sid])sinceTxt='Membre depuis '+mfmt(S.since[S.sid]);
+        else{var oldest=all.map(function(x){return Date.parse(x.created);}).filter(function(n){return n>0;}).sort()[0];if(oldest)sinceTxt='Première annonce : '+mfmt(oldest);}
+        var tab=(S.stab==='sold'&&sd.length)||(!sl.length)?'sold':'on';
+        var ct='';
+        if(!me){
+          if(!S.sess)ct='<div class="sact"><button class="btn" data-a="loginSeller">Se connecter pour contacter</button></div>';
+          else if(ph&&ph!=='loading')ct='<div class="sact"><a class="btn" href="https://wa.me/228'+ph+'?text='+encodeURIComponent('Bonjour, j’ai vu votre profil sur Échango.')+'" target="_blank" rel="noopener noreferrer">Écrire sur WhatsApp</a><button class="btn ghost" data-a="copy" data-id="'+ph+'">Copier le numéro</button></div>';
+          else ct='<div class="sact"><button class="btn" disabled>'+(ph===null?'Numéro indisponible':'Chargement…')+'</button></div>';
+        }
+        html='<div class="sban">'+avHtml(ref.seller_avatar,sn,true)+'<h2>'+esc(sn)+(me?' <span class="mine" style="color:#fff">(vous)</span>':'')+'</h2><p>'+esc(areas.slice(0,3).join(' · ')||'Lomé')+'</p>'+(sinceTxt?'<p>'+esc(sinceTxt)+'</p>':'')+
+          '<div class="sstats"><div><b>'+sl.length+'</b><span>En ligne</span></div><div><b>'+sd.length+'</b><span>Vendus</span></div><div><b>'+(sl.length+sd.length)+'</b><span>Annonces</span></div></div></div>'+ct+
+          '<div class="sharerow" style="margin:0 0 6px"><a class="btn wa" href="'+esc(shareProfileHref(S.sid,sn,sl.length))+'" target="_blank" rel="noopener noreferrer">Partager ce profil</a><button class="btn ghost" data-a="copyprof">Copier le lien</button></div>'+
+          '<div class="stabs" role="group" aria-label="Annonces"><button data-a="stab" data-id="on" aria-pressed="'+(tab==='on')+'">En ligne ('+sl.length+')</button><button data-a="stab" data-id="sold" aria-pressed="'+(tab==='sold')+'">Vendus ('+sd.length+')</button></div>'+
+          (tab==='on'?'<div class="grid">'+sl.map(card).join('')+'</div>':
+            (sd.length?'<div class="grid">'+sd.map(function(x){return '<article class="sold-card"><span class="tile t-'+x.cat+'">'+tileIn(x)+'<span class="badge">Vendu</span></span><span class="info"><span class="price">'+fmt(x.price)+'</span><span class="name">'+esc(x.title)+'</span></span></article>';}).join('')+'</div>':'<p class="muted">Aucun article vendu pour l’instant.</p>'));
       }
       bot=tabs('home');
     }
@@ -1492,7 +1522,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='loginFav'){S.after='favs';S.authMode='login';S.view='me';render();}
     else if(a==='seller'){
       if(!UUID.test(id))return;
-      S.sid=id.toLowerCase();S.sback=S.view==='detail'?'detail':'home';S.sbackPid=S.view==='detail'?S.pid:null;S.from='home';go('seller');fetchSellerListings(S.sid);
+      S.stab='on';S.sid=id.toLowerCase();S.sback=S.view==='detail'?'detail':'home';S.sbackPid=S.view==='detail'?S.pid:null;S.from='home';go('seller');fetchSellerListings(S.sid);
     }
     else if(a==='copyprof'){try{navigator.clipboard.writeText(sellerUrl(S.sid)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}
     else if(a==='open'){
@@ -1512,7 +1542,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='delph'){var r=S.draft.photos.splice(+id,1)[0];if(r)URL.revokeObjectURL(r.url);render();}
     else if(a==='publish'){publish();}
     else if(a==='copylink'){var lk=getListing(id);if(lk){try{navigator.clipboard.writeText(shareUrl(lk)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}}
-    else if(a==='copy'){if(S.pid)evTrack(S.pid,'contact');try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
+    else if(a==='copy'){if(S.pid&&S.view==='detail')evTrack(S.pid,'contact');try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
     else if(a==='edit'){startEdit(id);}
     else if(a==='saveedit'){saveEdit();}
     else if(a==='sold'||a==='unsold'){setSold(id,a==='sold');}
@@ -1521,6 +1551,8 @@ var T0=Date.now(),splashDone=false;
     else if(a==='doDel'){delListing(id);}
     else if(a==='theme'){S.theme=id;lsSet('ec-theme',id);applyTheme();render();}
     else if(a==='logout'){logout();}
+    else if(a==='stab'){S.stab=id;render();}
+    else if(a==='loginSeller'){S.after='seller';S.authMode='login';S.view='me';render();}
     else if(a==='togrid'){var gg=$('#grid');if(gg)gg.scrollIntoView({behavior:'smooth',block:'start'});}
     else if(a==='stepnext'){stepNext();}
     else if(a==='stepback'){stepBack();}
