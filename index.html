@@ -136,12 +136,14 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .btn[disabled]{opacity:.55;cursor:default}
 .btn.block{width:100%;flex:none}
 
-.tabbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
+.tabbar{position:relative;z-index:5;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
 .tab{min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--muted)}
 .tab[aria-current="page"]{color:var(--brand);font-weight:600}
 .tab.sell{color:var(--ink)}
 .tab.sell[aria-current="page"]{color:var(--brand)}
-.tab.sell .plusb{width:44px;height:30px;border-radius:12px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center}
+.tab.sell .plusb{width:54px;height:54px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;margin-top:-26px;border:4px solid var(--surface);box-shadow:0 6px 16px rgba(10,85,196,.4)}
+.tab.sell .plusb svg.i{width:26px;height:26px;stroke-width:2.2}.tab.sell{font-weight:600;color:var(--brand)}.tab.sell>span:last-child{margin-top:-1px}
+.tab{font-size:11.5px}
 
 .linkbtn{display:inline-flex;align-items:center;min-height:44px;color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:3px}
 .rad{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:8px;cursor:pointer}
@@ -303,6 +305,16 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rem.warn{background:#4A3510;color:#FFE3B0}}
 .rem svg.i{width:18px;height:18px;flex:none}.rem span{flex:1;min-width:0}
 .mstat{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+
+/* modération */
+.rcard{margin-bottom:12px}.rtop{display:flex;gap:12px;align-items:center}.rtop>div{display:grid;min-width:0;gap:1px}.rtop b{overflow-wrap:anywhere}
+.rth{width:56px;height:56px;border-radius:12px;overflow:hidden;flex:none;background:var(--tile-o);display:grid;place-items:center;color:var(--muted)}.rth img{width:100%;height:100%;object-fit:cover}
+.rrs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}.rrs .tag{background:#FDEBD0;color:#5A3A00}
+[data-theme="dark"] .rrs .tag{background:#4A3510;color:#FFE3B0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rrs .tag{background:#4A3510;color:#FFE3B0}}
+.rq{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--line);color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.ract{display:flex;gap:8px;margin-top:12px}.ract .btn{flex:1;height:42px;padding:0 8px;font-size:14px}
+.rconf{margin-top:12px}.rconf p{font-size:14px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -338,6 +350,7 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 19V10M12 19V5M19 19v-7"/></symbol>
 <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.500 6h.01M4.500 12h.01M4.500 18h.01"/></symbol>
 <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
 <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.500S4 15.800 4 9.800A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 8 2.200c0 6-8 10.700-8 10.700z"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.500 16.500 4.500 4.500"/></symbol>
@@ -639,8 +652,8 @@ var T0=Date.now(),splashDone=false;
   }
   function tabs(active){
     function tab(v,icon,label){return '<button class="tab" data-a="tab" data-v="'+v+'"'+(active===v?' aria-current="page"':'')+'>'+ico(icon)+label+'</button>';}
-    var sell='<button class="tab sell" data-a="tab" data-v="sell"'+(active==='sell'?' aria-current="page"':'')+'><span class="plusb">'+ico('plus')+'</span>Vendre</button>';
-    return '<nav class="tabbar" aria-label="Navigation">'+tab('home','home','Accueil')+tab('favs','heart','Favoris')+sell+tab('me','user','Profil')+'</nav>';
+    var sell='<button class="tab sell" data-a="tab" data-v="sell"'+(active==='sell'?' aria-current="page"':'')+'><span class="plusb">'+ico('plus')+'</span><span>Publier</span></button>';
+    return '<nav class="tabbar" aria-label="Navigation">'+tab('home','home','Accueil')+tab('mine','list','Annonces')+sell+tab('favs','heart','Favoris')+tab('me','user','Profil')+'</nav>';
   }
   var CONTACT='echango.app@gmail.com';
   var LEGAL=[["t", "Conditions d’utilisation"], ["m", "Dernière mise à jour : 30 octobre 2026"], ["h", "1. Ce qu’est Échango"], ["p", "Échango est une application de petites annonces. Elle permet à chacun de publier des articles ou des services et de se mettre en contact directement avec les autres membres, par WhatsApp ou par téléphone."], ["p", "Échango n’est ni vendeur, ni acheteur, ni intermédiaire de paiement. Aucun paiement ne passe par l’application. Chaque vente est un accord entre l’acheteur et le vendeur."], ["h", "2. Votre compte"], ["ul", ["Vous devez avoir 18 ans ou plus.", "Les informations de votre compte (nom, numéro de téléphone, e-mail) doivent être exactes.", "Gardez votre mot de passe secret. Vous êtes responsable de ce qui est fait avec votre compte.", "Une personne = un compte.", "Vous pouvez supprimer votre compte vous-même à tout moment, depuis l’onglet Profil."]], ["h", "3. Publier une annonce"], ["p", "Vous vous engagez à publier des annonces vraies, avec vos propres photos de l’article réellement proposé et un prix honnête en FCFA."], ["p", "Il est interdit de publier :"], ["ul", ["des articles volés, contrefaits ou dont la vente est interdite par la loi ;", "des armes, des drogues, des médicaments sans autorisation, des animaux protégés ;", "des documents d’identité ou des données personnelles d’autres personnes ;", "du contenu pornographique, violent, haineux ou qui harcèle quelqu’un ;", "de fausses annonces, des arnaques, ou toute annonce qui demande de l’argent à l’avance ;", "des annonces en double ou sans rapport avec la vente."]], ["h", "4. Acheter et vendre en sécurité"], ["ul", ["Retrouvez-vous dans un lieu public et payez à la remise de l’article.", "Ne versez jamais d’argent à l’avance, même pour « réserver ».", "Vérifiez l’article avant de payer.", "Méfiez-vous d’un prix trop beau pour être vrai.", "Signalez toute annonce suspecte avec le bouton « Signaler cette annonce »."]], ["p", "Échango ne peut pas garantir la qualité des articles ni l’honnêteté des membres. Les échanges se font sous votre propre responsabilité."], ["h", "5. Modération"], ["p", "Nous pouvons retirer une annonce ou suspendre un compte, sans prévenir, si les règles ne sont pas respectées ou si une annonce est signalée comme frauduleuse. Les signalements sont examinés à la main."], ["h", "6. Responsabilité"], ["p", "Échango est fourni tel quel, pendant sa période bêta. Nous faisons de notre mieux pour qu’il fonctionne, mais nous ne garantissons pas qu’il soit toujours disponible ni sans erreur. Dans les limites permises par la loi, Échango n’est pas responsable des pertes liées aux échanges entre membres."], ["h", "7. Vos contenus"], ["p", "Vos annonces et vos photos restent à vous. En les publiant, vous autorisez Échango à les afficher dans l’application et à les partager via les liens de partage. Vous pouvez modifier ou supprimer vos annonces à tout moment. Une annonce reste visible 30 jours ; vous pouvez ensuite la remettre en ligne d’un bouton."], ["h", "8. Changements"], ["p", "Ces conditions peuvent évoluer. En cas de changement important, nous le signalerons dans l’application. Continuer à l’utiliser veut dire que vous acceptez la nouvelle version."], ["t", "Politique de confidentialité"], ["h", "Les informations que nous gardons"], ["ul", ["Votre adresse e-mail et votre mot de passe (le mot de passe est protégé et personne ne peut le lire, nous non plus).", "Votre nom, votre numéro de téléphone, votre quartier et, si vous en ajoutez une, votre photo de profil.", "Vos annonces : titre, description, prix, photos, quartier et ville.", "Vos favoris.", "Les signalements que vous faites.", "Une statistique de visite anonyme : un numéro aléatoire propre à votre appareil et la date de la visite, sans lien avec votre nom ni votre compte.", "Des statistiques d’annonces anonymes : quand quelqu’un ouvre une annonce, ou touche « Écrire sur WhatsApp » ou « Copier le numéro », nous enregistrons l’annonce, le type d’action, la date et un numéro aléatoire propre à son appareil, sans lien avec son nom ni son compte."]], ["h", "À quoi cela sert"], ["p", "Uniquement à faire fonctionner Échango : créer votre compte, publier vos annonces, permettre aux acheteurs de vous joindre et traiter les signalements et montrer aux vendeurs combien de personnes ont vu et contacté leurs annonces. Nous ne vendons pas vos données et nous n’affichons pas de publicité ciblée."], ["h", "Qui voit quoi"], ["ul", ["Visible par tous : votre nom, votre photo de profil, votre quartier, votre ville et vos annonces.", "Visible seulement par les membres connectés : votre numéro de téléphone.", "Jamais affichés : votre e-mail et votre mot de passe.", "Privés : vos favoris.", "Visibles seulement par le vendeur : le nombre de vues, de contacts et de favoris de ses annonces. Il ne voit jamais qui les a faites."]], ["h", "Où sont gardées vos données"], ["p", "Les données et les photos sont hébergées par Supabase. Le site est hébergé par GitHub Pages. Un petit relais gratuit chez Cloudflare sert à afficher l’aperçu (photo, titre, prix) quand un lien d’annonce est partagé : il ne lit que des informations déjà publiques. Les polices de caractères viennent de Google Fonts. Un service d’envoi d’e-mails est utilisé pour les messages de réinitialisation du mot de passe. Votre navigateur garde aussi quelques réglages sur votre téléphone (votre connexion et le thème clair ou sombre). Nous n’utilisons pas de cookies de suivi ni d’outil de statistiques externe : nous comptons seulement les visites de façon anonyme, dans notre propre base."], ["h", "Combien de temps"], ["p", "Vos données restent tant que votre compte existe. Quand vous supprimez une annonce, ses photos sont effacées aussi. Quand vous supprimez votre compte, votre profil, vos annonces, leurs photos et vos favoris sont effacés définitivement."], ["h", "Vos droits"], ["p", "Vous pouvez demander à voir, corriger ou supprimer vos données. Vous pouvez modifier vos informations dans l’onglet Profil et supprimer votre compte vous-même au même endroit."], ["h", "Contact"], ["p", "Pour toute question, demande de suppression de compte ou signalement :"]];
@@ -751,7 +764,40 @@ var T0=Date.now(),splashDone=false;
   function loadAdmin(){
     if(!S.isAdmin||S.adm.loading)return;
     S.adm.loading=true;S.adm.err='';render();
-    rest('POST','/rpc/admin_stats',{}).then(function(d){S.adm.data=d;S.adm.sel=null;}).catch(function(e){S.adm.err=errMsg(e);}).then(function(){S.adm.loading=false;if(S.view==='admin')render();});
+    S.adm.conf=null;
+    var pr=rest('POST','/rpc/admin_reports',{}).then(function(r){S.adm.rep=Array.isArray(r)?r:[];S.adm.repErr=false;}).catch(function(){S.adm.rep=null;S.adm.repErr=true;});
+    rest('POST','/rpc/admin_stats',{}).then(function(d){S.adm.data=d;S.adm.sel=null;}).catch(function(e){S.adm.err=errMsg(e);}).then(function(){return pr;}).then(function(){S.adm.loading=false;if(S.view==='admin')render();});
+  }
+  function reportsHtml(){
+    var A=S.adm,R=A.rep;
+    if(A.repErr)return '<h3 class="sec">Signalements</h3><div class="box"><p class="muted">Modération indisponible : le SQL de modération n’a pas encore été lancé dans Supabase.</p></div>';
+    if(!R)return '';
+    if(!R.length)return '<h3 class="sec">Signalements</h3><div class="box"><p class="muted">Aucun signalement à traiter. 👍</p></div>';
+    var lab={};REASONS.forEach(function(r){lab[r[0]]=r[1];});
+    return '<h3 class="sec">Signalements à traiter ('+R.length+')</h3>'+R.map(function(x){
+      var conf=A.conf&&A.conf.id===x.id?A.conf.kind:'',busy=A.repBusy;
+      var th=okAv(x.photo)?'<img src="'+esc(x.photo)+'" alt="">':ico('tag');
+      var acts=conf?'<div class="rconf"><p><b>'+(conf==='remove'?'Retirer cette annonce ? Elle ne sera plus visible par personne.':'Ignorer ces signalements ? Ils seront effacés et l’annonce reste en ligne.')+'</b></p><div class="ract"><button class="btn ghost" data-a="repcancel">Annuler</button><button class="btn'+(conf==='remove'?' danger':'')+'" data-a="repdo"'+(busy?' disabled':'')+'>'+(busy?'Un instant…':'Confirmer')+'</button></div></div>':
+        '<div class="ract"><button class="btn ghost" data-a="repview" data-id="'+esc(x.id)+'">Voir</button><button class="btn ghost" data-a="repask" data-id="'+esc(x.id)+'" data-v="dismiss">Ignorer</button><button class="btn danger" data-a="repask" data-id="'+esc(x.id)+'" data-v="remove">Retirer</button></div>';
+      return '<div class="box rcard"><div class="rtop"><span class="rth">'+th+'</span><div><b>'+esc(x.title)+'</b><span class="muted">'+fmt(Number(x.price)||0)+' · '+esc(x.seller_name||'Vendeur')+'</span><span class="muted"><b>'+Number(x.n)+'</b> signalement'+(Number(x.n)>1?'s':'')+'</span></div></div>'+
+        '<div class="rrs">'+(x.reasons||[]).map(function(r){return '<span class="tag">'+esc(lab[r]||r)+'</span>';}).join('')+'</div>'+
+        (x.details||[]).slice(0,3).map(function(d){return '<p class="rq">« '+esc(String(d).slice(0,200))+' »</p>';}).join('')+acts+'</div>';
+    }).join('');
+  }
+  function repAct(){
+    var A=S.adm,c=A.conf;if(!c||A.repBusy)return;
+    A.repBusy=true;render();
+    var fn=c.kind==='remove'?'admin_remove_listing':'admin_dismiss_reports';
+    rest('POST','/rpc/'+fn,{p_id:c.id}).then(function(){
+      A.rep=(A.rep||[]).filter(function(x){return x.id!==c.id;});
+      if(c.kind==='remove')S.listings=(S.listings||[]).filter(function(l){return l.id!==c.id;});
+      A.conf=null;toast(c.kind==='remove'?'Annonce retirée':'Signalements ignorés');
+      return rest('POST','/rpc/admin_stats',{}).then(function(d){A.data=d;}).catch(function(){});
+    }).catch(function(){toast('Action impossible. Réessayez.');}).then(function(){A.repBusy=false;if(S.view==='admin')render();});
+  }
+  function repView(id){
+    function go2(){if(getListing(id)){S.pid=id;S.phIdx=0;S.from='home';go('detail');if(S.sess&&getListing(id).seller_id!==S.sess.uid)ensurePhone(getListing(id).seller_id);}else toast('Annonce introuvable.');}
+    if(getListing(id))go2();else qList('&id=eq.'+id+'&status=in.(active,sold)',0,1).then(function(rows){mergeRows(rows);go2();}).catch(function(){toast('Annonce introuvable.');});
   }
   function dayLabel(d){var m=String(d).slice(5,10).split('-');return m.length===2?m[1]+'/'+m[0]:'';}
   function adminHtml(){
@@ -769,10 +815,10 @@ var T0=Date.now(),splashDone=false;
     }).join('');
     var sel=(A.sel!==null&&days[A.sel])?days[A.sel]:days[days.length-1];
     var cap=sel?(dayLabel(sel.day)+' · '+n(sel.visitors)+(Number(sel.visitors)>1?' visiteurs':' visiteur')+' · '+n(sel.users)+' inscrit(s) · '+n(sel.listings)+' annonce(s)'):'';
-    var cats={v:'Vêtements',e:'Électro',s:'Services',o:'Autres'},cl=(d.by_cat||[]).map(function(c){return '<li><span>'+esc(cats[c.cat]||'Autres')+'</span><b>'+n(c.n)+'</b></li>';}).join('');
+    var cats={};CATS.forEach(function(c){cats[c.id]=c.label;});var cl=(d.by_cat||[]).map(function(c){return '<li><span>'+esc(cats[c.cat]||'Autres')+'</span><b>'+n(c.n)+'</b></li>';}).join('');
     var rows=days.slice().reverse().map(function(x){return '<tr><td>'+esc(dayLabel(x.day))+'</td><td>'+n(x.visitors)+'</td><td>'+n(x.users)+'</td><td>'+n(x.listings)+'</td></tr>';}).join('');
     return '<div class="kpis">'+kpi('Visiteurs aujourd’hui',d.visitors_today)+kpi('Visiteurs sur 7 jours',d.visitors_7d)+kpi('Visiteurs au total',d.visitors_total)+kpi('Inscrits',d.users,'+'+n(d.users_7d)+' en 7 jours')+
-      kpi('Annonces en ligne',d.listings_active,'+'+n(d.listings_7d)+' en 7 jours')+kpi('Articles vendus',d.listings_sold)+kpi('Favoris',d.favorites)+kpi('Signalements à traiter',d.reports,'',Number(d.reports)>0)+'</div>'+
+      kpi('Annonces en ligne',d.listings_active,'+'+n(d.listings_7d)+' en 7 jours')+kpi('Articles vendus',d.listings_sold)+kpi('Favoris',d.favorites)+kpi('Signalements à traiter',d.reports,'',Number(d.reports)>0)+'</div>'+reportsHtml()+
       '<h3 class="sec">Visiteurs par jour (14 jours)</h3><div class="box"><svg class="bars" viewBox="0 0 '+W+' '+(H+2)+'" role="group" aria-label="Visiteurs par jour">'+
       '<line x1="0" x2="'+W+'" y1="'+H+'" y2="'+H+'" stroke="var(--line)" stroke-width="1"/>'+bars+'</svg>'+
       '<div class="axis"><span>'+esc(dayLabel(days[0]&&days[0].day))+'</span><span>'+esc(dayLabel(days[days.length-1]&&days[days.length-1].day))+'</span></div>'+
@@ -939,7 +985,7 @@ var T0=Date.now(),splashDone=false;
       bot=tabs('me');
     }
     else if(v==='mine'){
-      top=backBar('Mes annonces','home');if(!S.sess)S.after='mine';
+      top='<div class="bar"><h2>Mes annonces</h2></div>';if(!S.sess)S.after='mine';
       g=gate('Connectez-vous pour voir vos annonces.');
       if(g!==null)html=g;
       else{
@@ -948,7 +994,7 @@ var T0=Date.now(),splashDone=false;
         html=(mn.length?mn.map(function(x){return '<button class="mrow" data-a="open" data-id="'+x.id+'"><span class="tile t-'+x.cat+'">'+tileIn(x)+'</span><span class="mi"><b>'+esc(x.title)+'</b><span class="price">'+fmt(x.price)+(x.sold?' <span class="soldb">Vendu</span>':(x.expired?' <span class="soldb">Expirée</span>':''))+'</span>'+(S.statsOk?'<span class="mstat">'+stLine(x.id)+'</span>':'')+'</span></button>';}).join(''):
           '<div class="empty">'+ico('tag')+'<h3>Aucune annonce</h3><p>Vous n’avez rien publié pour l’instant.</p><button class="btn" data-a="tab" data-v="sell">Publier une annonce</button></div>');
       }
-      bot=tabs('me');
+      bot=tabs('mine');
     }
     else if(v==='info'){
       var inf=INFO[S.info]||INFO.how;
@@ -1436,6 +1482,10 @@ var T0=Date.now(),splashDone=false;
     else if(a==='reload'){S.listings=null;S.loadErr=false;render();loadListings();}
     else if(a==='admin'){if(S.isAdmin){S.adm.data=null;go('admin');loadAdmin();}}
     else if(a==='admload'){loadAdmin();}
+    else if(a==='repask'){S.adm.conf={id:id,kind:v};render();}
+    else if(a==='repcancel'){S.adm.conf=null;render();}
+    else if(a==='repdo'){repAct();}
+    else if(a==='repview'){repView(id);}
     else if(a==='bar'){S.adm.sel=+id;render();}
     else if(a==='legal'){S.lback=(S.view==='legal')?S.lback:S.view;go('legal');}
     else if(a==='fav'){toggleFav(id);}
