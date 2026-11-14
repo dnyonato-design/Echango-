@@ -40,7 +40,7 @@
   --tile-v:#17305A; --tile-e:#173F1E; --tile-s:#12394A; --tile-o:#222B3C; --sun:#6EA8FF; --sun-ink:#06142B; --dot:rgba(255,255,255,.08); color-scheme:dark}
 
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior-y:contain}
 body{margin:0;background:var(--out);color:var(--ink);font:16px/1.45 'Figtree',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 h1,h2,h3,.logo{font-family:var(--display);text-wrap:balance;margin:0}
 p{margin:0}
@@ -50,6 +50,16 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 
 #app{position:relative;height:100%;height:100dvh;max-width:480px;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;border-inline:1px solid var(--line);overflow:hidden}
 #top,#bottom{flex:none}
+#nbar{position:absolute;top:0;left:0;right:0;height:3px;overflow:hidden;opacity:0;pointer-events:none;z-index:60;transition:opacity .15s}
+.navwait #nbar{opacity:1}
+#nbar i{display:block;width:40%;height:100%;background:var(--blue,#0A55C4);border-radius:2px;animation:spSlide .8s ease-in-out infinite}
+.navwait #main{opacity:.5;transition:opacity .2s}
+#main.vin{animation:spUp .28s ease both}
+#ptr{position:absolute;left:50%;top:64px;width:38px;height:38px;margin-left:-19px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.15);display:grid;place-items:center;z-index:40;opacity:0;pointer-events:none;transform:translateY(-50px)}
+#ptr svg{width:20px;height:20px;stroke:var(--blue,#0A55C4);fill:none;stroke-width:2.2;stroke-linecap:round;transition:transform .1s}
+#ptr.spin svg{animation:sp .7s linear infinite}
+#ptr.snap{transition:transform .25s,opacity .25s}
+@media (prefers-reduced-motion:reduce){#nbar i,#ptr.spin svg{animation-duration:2s}}
 #main{flex:1;min-height:0;overflow-y:auto;padding:16px;overscroll-behavior:contain}
 
 .bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg);min-height:64px}
@@ -412,6 +422,8 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 
 <div id="app">
   <div id="top"></div>
+  <div id="nbar" aria-hidden="true"><i></i></div>
+  <div id="ptr" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></svg></div>
   <main id="main" tabindex="-1"></main>
   <div id="bottom"></div>
   <div id="toast" role="status" aria-live="polite"></div>
@@ -1263,6 +1275,45 @@ var T0=Date.now(),splashDone=false;
     if(anim){var x=document.getElementById('dr-x');if(x)x.focus();}
   }
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&S.menu){S.menu=false;renderDrawer();}});
+  var navBusy=false;
+  function navTo(fn){
+    if(navBusy)return;
+    if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){fn();return;}
+    navBusy=true;var app=$('#app');app.classList.add('navwait');
+    setTimeout(function(){
+      fn();app.classList.remove('navwait');navBusy=false;
+      var m=$('#main');m.classList.remove('vin');void m.offsetWidth;m.classList.add('vin');
+    },380);
+  }
+  var ptrBusy=false;
+  function initPtr(){
+    var m=$('#main'),el=$('#ptr'),y0=null,x0=0,pull=0,TH=70;
+    function setP(d){el.style.opacity=Math.min(1,d/TH);el.style.transform='translateY('+(-50+Math.min(d,110)*0.8)+'px)';el.firstElementChild.style.transform='rotate('+(d*3)+'deg)';}
+    m.addEventListener('touchstart',function(e){
+      y0=null;pull=0;
+      if(S.view!=='home'||S.menu||ptrBusy||m.scrollTop>0||e.touches.length!==1)return;
+      if(e.target.closest('.cats,input,textarea,select'))return;
+      y0=e.touches[0].clientY;x0=e.touches[0].clientX;el.classList.remove('snap');
+    },{passive:true});
+    m.addEventListener('touchmove',function(e){
+      if(y0===null)return;
+      var dy=e.touches[0].clientY-y0,dx=Math.abs(e.touches[0].clientX-x0);
+      if(dy<=0||dx>dy){if(dy<=0&&pull===0)y0=null;return;}
+      pull=dy;setP(dy);
+    },{passive:true});
+    function end(){
+      if(y0===null)return;var d=pull;y0=null;pull=0;el.classList.add('snap');
+      if(d>=TH&&!ptrBusy){
+        ptrBusy=true;el.classList.add('spin');el.style.opacity=1;el.style.transform='translateY(10px)';
+        var t0=Date.now();
+        Promise.all([loadListings(),loadNews()]).catch(function(){}).then(function(){
+          var w=Math.max(0,700-(Date.now()-t0));
+          setTimeout(function(){ptrBusy=false;el.classList.remove('spin');el.style.opacity=0;el.style.transform='translateY(-50px)';toast('Page actualisée');},w);
+        });
+      }else{el.style.opacity=0;el.style.transform='translateY(-50px)';}
+    }
+    m.addEventListener('touchend',end,{passive:true});m.addEventListener('touchcancel',end,{passive:true});
+  }
   function go(v){
     if(S.view==='edit'&&v!=='edit')leaveEdit();
     S.view=v;S.confirmDel=false;S.delAcc=false;S.delTxt='';
@@ -1591,8 +1642,8 @@ var T0=Date.now(),splashDone=false;
     if(a==='msec'){S.msec=(S.msec===id?null:id);renderDrawer(false);return;}
     if(a==='mcat'){S.cat=id;go('home');return;}
     if(a==='mcity'){S.fcity=(id==='all'?'':id);go('home');toast(id==='all'?'Toutes les villes':'Ville : '+id);return;}
-    if(a==='info'){S.info=id;go('info');return;}
-    if(a==='tab'||a==='go'){S.after=null;if(v==='detail'&&S.view==='seller'&&S.sbackPid){S.pid=S.sbackPid;S.from='home';}go(v);}
+    if(a==='info'){S.info=id;navTo(function(){go('info');});return;}
+    if(a==='tab'||a==='go'){S.after=null;if(v==='detail'&&S.view==='seller'&&S.sbackPid){S.pid=S.sbackPid;S.from='home';}navTo(function(){go(v);});}
     else if(a==='cat'){S.cat=id;render();}
     else if(a==='ftoggle'){S.fOpen=!S.fOpen;render();}
     else if(a==='fsort'){S.sort=id;render();}
@@ -1602,7 +1653,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='reload'){S.listings=null;S.loadErr=false;render();loadListings();}
     else if(a==='admin'){if(S.isAdmin){S.adm.data=null;go('admin');loadAdmin();}}
     else if(a==='admload'){loadAdmin();}
-    else if(a==='notifs'){S.seenAt=newsSeen();go('notifs');}
+    else if(a==='notifs'){S.seenAt=newsSeen();navTo(function(){go('notifs');});}
     else if(a==='ban'){S.ban=Number(id)===1?1:0;S.banAt=Date.now();applyBan();}
     else if(a==='shareapp'){shareApp();}
     else if(a==='anask'){S.anAsk=id;render();}
@@ -1730,6 +1781,7 @@ var T0=Date.now(),splashDone=false;
   render();
   loadListings();
   loadNews();
+  initPtr();
   setInterval(function(){if(S.view!=='home'||document.hidden||Date.now()-S.banAt<9000)return;if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return;S.ban=S.ban?0:1;applyBan();},6000);
   if(S.sess&&!recov){loadFavs();checkAdmin();}
   trackVisit();
