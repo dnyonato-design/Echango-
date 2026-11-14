@@ -245,6 +245,16 @@ svg.bars{width:100%;height:auto;display:block}svg.bars g{cursor:pointer}
 .cat svg.i{width:24px;height:24px}
 .cat[aria-pressed="true"] .ci{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);box-shadow:0 4px 12px rgba(10,85,196,.35)}
 .cat[aria-pressed="true"]{color:var(--brand)}
+.hl{display:grid;gap:12px}
+.hl .hr{display:grid;gap:6px}
+.hl .hh{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.hl .hh b{font-weight:700}
+.hl .hbar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.hl .hbar i{display:block;height:100%;border-radius:5px;background:#16A06A}
+.hl .hr.w .hbar i{background:#E8A317}.hl .hr.d .hbar i{background:#E5484D}
+.hl .verdict{padding:10px 12px;border-radius:12px;font-weight:700;font-size:14px;background:var(--tile-v)}
+.hl .verdict.w{background:rgba(232,163,23,.18)}.hl .verdict.d{background:rgba(229,72,77,.18)}
+.hl small{color:var(--muted);line-height:1.4}
 .nbell{position:relative;margin-left:auto;flex:none}
 .nbadge{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;box-sizing:border-box;line-height:1;pointer-events:none}
 .nbell svg.i{width:24px;height:24px}
@@ -838,8 +848,22 @@ var T0=Date.now(),splashDone=false;
     if(!S.isAdmin||S.adm.loading)return;
     S.adm.loading=true;S.adm.err='';render();
     S.adm.conf=null;
+    rest('POST','/rpc/admin_health',{}).then(function(r){S.adm.health=(r&&typeof r==='object')?r:null;S.adm.healthErr=!S.adm.health;}).catch(function(){S.adm.health=null;S.adm.healthErr=true;}).then(function(){if(S.view==='admin'&&!S.adm.loading)render();});
     var pr=rest('POST','/rpc/admin_reports',{}).then(function(r){S.adm.rep=Array.isArray(r)?r:[];S.adm.repErr=false;}).catch(function(){S.adm.rep=null;S.adm.repErr=true;});
     rest('POST','/rpc/admin_stats',{}).then(function(d){S.adm.data=d;S.adm.sel=null;}).catch(function(e){S.adm.err=errMsg(e);}).then(function(){return pr;}).then(function(){S.adm.loading=false;if(S.view==='admin')render();});
+  }
+  function mb(b){b=Number(b)||0;return b>=1073741824?(b/1073741824).toFixed(2).replace('.',',')+' Go':(b/1048576).toFixed(b>=10485760?0:1).replace('.',',')+' Mo';}
+  function healthHtml(){
+    var h=S.adm.health;
+    if(S.adm.healthErr)return '<h3 class="sec">Santé de l’application</h3><div class="box"><p class="muted">Indisponible : le SQL « santé » n’a pas encore été lancé dans Supabase.</p></div>';
+    if(!h)return '';
+    var rows=[['Base de données',Number(h.db_bytes)||0,524288000,mb(h.db_bytes)+' / 500 Mo'],['Stockage des photos',Number(h.storage_bytes)||0,1073741824,mb(h.storage_bytes)+' / 1 Go'],['Comptes inscrits',Number(h.users)||0,50000,Number(h.users||0).toLocaleString('fr-FR')+' / 50 000']],worst=0;
+    var out=rows.map(function(r){var pc=Math.min(100,r[1]/r[2]*100);if(pc>worst)worst=pc;var c=pc>=80?'d':(pc>=60?'w':'');return '<div class="hr '+c+'"><div class="hh"><span>'+r[0]+'</span><b>'+r[3]+'</b></div><div class="hbar" role="progressbar" aria-label="'+r[0]+'" aria-valuenow="'+Math.round(pc)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+Math.max(pc,pc>0?2:0)+'%"></i></div></div>';}).join('');
+    var vc=worst>=80?'d':(worst>=60?'w':''),vt=worst>=80?'Passez à l’abonnement maintenant : une limite est presque atteinte.':(worst>=60?'À surveiller : pensez à l’abonnement bientôt.':'Tout va bien : vous êtes loin des limites gratuites.');
+    var tl=Number(h.listings_total)||0,sb=Number(h.storage_bytes)||0,more='';
+    if(tl>0&&sb>0){var per=sb/tl,left=Math.floor((1073741824-sb)/per);more='<small>En moyenne, une annonce utilise '+mb(per)+' de photos : il reste de la place pour environ '+Math.max(left,0).toLocaleString('fr-FR')+' annonces de plus avant la limite de stockage.</small>';}
+    return '<h3 class="sec">Santé de l’application</h3><div class="box hl"><div class="verdict '+vc+'">'+vt+'</div>'+out+more+
+      '<small>Limites du plan gratuit Supabase. Non mesurés ici : la bande passante (5 Go par mois), visible dans Supabase → Settings → Usage. Un projet gratuit est mis en pause après 1 semaine sans activité. Abonnement Pro : à partir de 25 $ par mois (8 Go de base, 100 Go de photos, 250 Go de bande passante).</small></div>';
   }
   function reportsHtml(){
     var A=S.adm,R=A.rep;
@@ -891,7 +915,7 @@ var T0=Date.now(),splashDone=false;
     var cats={};CATS.forEach(function(c){cats[c.id]=c.label;});var cl=(d.by_cat||[]).map(function(c){return '<li><span>'+esc(cats[c.cat]||'Autres')+'</span><b>'+n(c.n)+'</b></li>';}).join('');
     var rows=days.slice().reverse().map(function(x){return '<tr><td>'+esc(dayLabel(x.day))+'</td><td>'+n(x.visitors)+'</td><td>'+n(x.users)+'</td><td>'+n(x.listings)+'</td></tr>';}).join('');
     return '<div class="kpis">'+kpi('Visiteurs aujourd’hui',d.visitors_today)+kpi('Visiteurs sur 7 jours',d.visitors_7d)+kpi('Visiteurs au total',d.visitors_total)+kpi('Inscrits',d.users,'+'+n(d.users_7d)+' en 7 jours')+
-      kpi('Annonces en ligne',d.listings_active,'+'+n(d.listings_7d)+' en 7 jours')+kpi('Articles vendus',d.listings_sold)+kpi('Favoris',d.favorites)+kpi('Signalements à traiter',d.reports,'',Number(d.reports)>0)+'</div>'+reportsHtml()+
+      kpi('Annonces en ligne',d.listings_active,'+'+n(d.listings_7d)+' en 7 jours')+kpi('Articles vendus',d.listings_sold)+kpi('Favoris',d.favorites)+kpi('Signalements à traiter',d.reports,'',Number(d.reports)>0)+'</div>'+healthHtml()+reportsHtml()+
       '<h3 class="sec">Visiteurs par jour (14 jours)</h3><div class="box"><svg class="bars" viewBox="0 0 '+W+' '+(H+2)+'" role="group" aria-label="Visiteurs par jour">'+
       '<line x1="0" x2="'+W+'" y1="'+H+'" y2="'+H+'" stroke="var(--line)" stroke-width="1"/>'+bars+'</svg>'+
       '<div class="axis"><span>'+esc(dayLabel(days[0]&&days[0].day))+'</span><span>'+esc(dayLabel(days[days.length-1]&&days[days.length-1].day))+'</span></div>'+
