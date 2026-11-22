@@ -501,7 +501,11 @@ html[data-xmas] #xmas{display:block}
   function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
   var toastT;
   function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show');},2600);}
-  function xmasSeason(){var d=new Date(),m=d.getMonth(),dd=d.getDate();return (m===10&&dd>=20)||m===11||(m===0&&dd<=6);}
+  function xmasSeason(){var d=new Date(),m=d.getMonth(),dd=d.getDate();return (m===11&&dd>=15)||(m===0&&dd<=6);}
+  function xmasIcons(){
+    if(!xmasSeason())return;
+    [['link[rel="manifest"]','manifest.webmanifest','manifest-noel.webmanifest'],['link[rel="icon"]','icon-192.png','icon-192-noel.png'],['link[rel="apple-touch-icon"]','icon-192.png','icon-192-noel.png']].forEach(function(x){var el=document.querySelector(x[0]);if(el&&el.getAttribute('href')===x[1])el.setAttribute('href',x[2]);});
+  }
   function applyXmas(){
     S.xmas=xmasSeason()&&lsGet('ec-xmas')!=='off';
     var r=document.documentElement;if(S.xmas)r.setAttribute('data-xmas','1');else r.removeAttribute('data-xmas');
@@ -1897,7 +1901,7 @@ var T0=Date.now(),splashDone=false;
   loadListings();
   loadNews();
   initPtr();
-  applyXmas();initXmas();
+  applyXmas();initXmas();xmasIcons();
   setInterval(function(){if(S.view!=='home'||document.hidden||Date.now()-S.banAt<9000)return;if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return;S.ban=(S.ban+1)%nBan();applyBan();},6000);
   if(S.sess&&!recov){loadFavs();checkAdmin();}
   trackVisit();
