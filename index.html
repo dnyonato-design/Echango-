@@ -312,6 +312,20 @@ html[data-xmas] #xmas{display:block}
 #lb .lbtrack.z{overflow-x:hidden;touch-action:none}
 #lb .lbs{flex:0 0 100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;place-items:center;overflow:hidden}
 #lb .lbs img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none;will-change:transform}
+.stars{color:#F5A623;letter-spacing:1px}
+.rt{font-size:13px;color:var(--muted)}.rt b{color:var(--text,inherit)}
+.srate{font-size:15px!important;font-weight:700}
+.rsum{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);margin:8px 0}
+.rsum .big{font-family:var(--display);font-size:38px;font-weight:800;line-height:1}
+.rsum .stars{font-size:18px;display:block}.rsum small{color:var(--muted)}
+.rvc{padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);margin-bottom:10px;display:grid;gap:6px}
+.rvc.mine{border-color:var(--brand)}
+.rvh{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px}.rvh span{color:var(--muted);font-size:12px}
+.rvc p{margin:0;overflow-wrap:anywhere;white-space:pre-line}
+.rvc .ract{display:flex;gap:8px;justify-content:flex-end}.rvc .ract .btn{min-height:36px;padding:0 14px;font-size:13px}
+.rstars{display:flex;gap:6px;justify-content:center;margin:6px 0 4px}
+.rstars button{font-size:38px;line-height:1;color:var(--line);padding:2px 4px;min-width:44px;min-height:48px}
+.rstars button[aria-pressed="true"]{color:#F5A623}
 .nbell{position:relative;margin-left:auto;flex:none}
 .nbadge{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;box-sizing:border-box;line-height:1;pointer-events:none}
 .nbell svg.i{width:24px;height:24px}
@@ -495,7 +509,7 @@ html[data-xmas] #xmas{display:block}
   var S={view:'home',news:null,ban:0,banAt:0,anf:{t:'',b:''},anAsk:null,anBusy:false,cat:'all',q:'',fOpen:false,editId:null,draftSaved:null,isAdmin:false,adm:{data:null,loading:false,err:'',sel:null},favs:{},favsReady:false,lback:'me',sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',fcity:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
     sess:null,prof:null,profReady:false,since:{},stab:'on',after:null,
     authMode:'login',af:{email:'',password:'',name:'',phone:'',area:'',terms:false},authErr:'',authMsg:'',busy:false,
-    pf:{name:'',phone:'',area:'',bio:''},pfErr:{},bios:{},srep:{reason:'',details:'',busy:false,err:''},xmas:false,
+    pf:{name:'',phone:'',area:'',bio:''},pfErr:{},bios:{},rev:{},rv:{rating:0,comment:'',busy:false,err:''},revAsk:null,srep:{reason:'',details:'',busy:false,err:''},xmas:false,
     draft:null,derr:{},sellErr:'',phones:{},theme:'auto',
     rep:{reason:'',details:'',busy:false,err:''},rv:{pw:'',pw2:'',busy:false,err:''}};
   var SREASONS=[['arnaque','Arnaque ou demande d’argent à l’avance'],['abus','Comportement abusif ou harcèlement'],['faux','Faux profil ou usurpation d’identité'],['autre','Autre raison']];
@@ -708,6 +722,44 @@ var T0=Date.now(),splashDone=false;
       if(S.prof&&!S.mineLoaded){S.mineLoaded=true;fetchSellerListings(S.sess.uid);}
       if(S.prof){S.pf={name:S.prof.name||'',phone:S.prof.phone||'',area:S.prof.area||'',bio:S.prof.bio||''};}
     });
+  }
+  function rerenderFor(sid){
+    var pp=S.view==='detail'?getListing(S.pid):null;
+    if((S.view==='seller'&&S.sid===sid)||(pp&&pp.seller_id===sid))render();
+  }
+  function ensureRev(sid){
+    if(S.rev[sid]!==undefined)return;
+    S.rev[sid]={loading:true,avg:0,n:0,items:[]};
+    rest('POST','/rpc/get_seller_reviews',{p_id:sid}).then(function(r){
+      S.rev[sid]=(r&&typeof r==='object'&&!Array.isArray(r))?{avg:Number(r.avg)||0,n:Number(r.n)||0,items:Array.isArray(r.items)?r.items:[]}:{avg:0,n:0,items:[],off:true};
+    }).catch(function(){S.rev[sid]={avg:0,n:0,items:[],off:true};}).then(function(){rerenderFor(sid);});
+  }
+  function starsOf(r){var f=Math.max(0,Math.min(5,Math.round(Number(r)||0)),0),o='',i;for(i=0;i<5;i++)o+=i<f?'★':'☆';return o;}
+  function rfmt(a){return (Math.round(a*10)/10).toFixed(1).replace('.',',');}
+  function ratingLine(sid){
+    var rv=S.rev[sid];if(!rv||rv.loading||rv.off)return '';
+    if(!rv.n)return '<span class="rt">Pas encore d’avis</span>';
+    return '<span class="rt"><span class="stars" aria-hidden="true">★</span> <b>'+rfmt(rv.avg)+'</b> ('+rv.n+' avis)</span>';
+  }
+  function reviewsHtml(me){
+    var rv=S.rev[S.sid]||{n:0,avg:0,items:[]},mine=(rv.items||[]).filter(function(x){return x.mine;})[0],h='';
+    h+='<div class="rsum">'+(rv.n?'<div class="big">'+rfmt(rv.avg)+'</div><div><span class="stars" aria-hidden="true">'+starsOf(rv.avg)+'</span><small>'+rv.n+' avis</small></div>':'<div><b>Aucun avis pour l’instant</b><br><small>'+(me?'Vos acheteurs pourront vous noter ici.':'Soyez le premier à donner votre avis.')+'</small></div>')+'</div>';
+    if(!me)h+='<button class="btn block" data-a="rvstart" style="margin-bottom:12px">'+(mine?'Modifier mon avis':'Donner mon avis')+'</button>';
+    h+=(rv.items||[]).map(function(x){
+      var ask=S.revAsk===x.id;
+      return '<div class="rvc'+(x.mine?' mine':'')+'"><div class="rvh"><b>'+esc(x.name||'Membre')+(x.mine?' (vous)':'')+'</b><span>'+esc(ago(x.created_at))+'</span></div><span class="stars" role="img" aria-label="'+(Number(x.rating)||0)+' sur 5">'+starsOf(x.rating)+'</span>'+(x.comment?'<p>'+esc(x.comment)+'</p>':'')+
+        ((x.mine||S.isAdmin)?'<div class="ract">'+(ask?'<button class="btn ghost" data-a="revask" data-id="">Annuler</button><button class="btn danger" data-a="revdel" data-id="'+esc(x.id)+'" data-v="'+(x.mine?'mine':'admin')+'">Confirmer</button>':'<button class="btn ghost" data-a="revask" data-id="'+esc(x.id)+'">Supprimer</button>')+'</div>':'')+'</div>';
+    }).join('');
+    return h;
+  }
+  function doReview(){
+    var r=S.rv;if(r.busy)return;
+    if(!S.sess||!S.sid)return;
+    if(!(r.rating>=1)){r.err='Choisissez une note de 1 à 5 étoiles.';render();return;}
+    r.busy=true;r.err='';render();
+    rest('POST','/rpc/submit_seller_review',{p_seller:S.sid,p_rating:r.rating,p_comment:(r.comment||'').trim()||null}).then(function(){
+      delete S.rev[S.sid];S.rv={rating:0,comment:'',busy:false,err:''};S.stab='rev';go('seller');toast('Merci pour votre avis !');
+    }).catch(function(e){r.busy=false;r.err=errMsg(e);render();});
   }
   function ensureBio(sid){
     if(S.bios[sid]!==undefined)return;
@@ -1146,12 +1198,13 @@ var T0=Date.now(),splashDone=false;
     return '<div class="actionbar"><button class="btn" disabled>'+(ph===null?'Numéro indisponible':'Chargement…')+'</button></div>';
   }
   function sellerBox(p){
+    ensureRev(p.seller_id);
     var ph=S.phones[p.seller_id],c;
     if(!S.sess)c='<p class="muted">Connectez-vous pour voir le numéro du vendeur.</p>';
     else if(ph==='loading'||ph===undefined)c='<p class="muted">Chargement du numéro…</p>';
     else if(!ph)c='<p class="muted">Numéro indisponible.</p>';
     else c='<div class="num">+228 '+esc(fmtPhone(ph))+'</div>';
-    return '<div class="box seller"><button class="who whobtn" data-a="seller" data-id="'+p.seller_id+'">'+avHtml(p.seller_avatar,p.seller_name,false)+'<div><b>'+esc(p.seller_name)+'</b><span class="muted">'+esc(p.loc||'Lomé')+'</span></div><span class="chev">Voir le profil ›</span></button>'+c+'</div>';
+    return '<div class="box seller"><button class="who whobtn" data-a="seller" data-id="'+p.seller_id+'">'+avHtml(p.seller_avatar,p.seller_name,false)+'<div><b>'+esc(p.seller_name)+'</b><span class="muted">'+esc(p.loc||'Lomé')+'</span>'+ratingLine(p.seller_id)+'</div><span class="chev">Voir le profil ›</span></button>'+c+'</div>';
   }
 
   /* ---------- affichage ---------- */
@@ -1243,7 +1296,7 @@ var T0=Date.now(),splashDone=false;
       var all=(S.listings||[]).filter(function(x){return x.seller_id===S.sid;}),sl=all.filter(live),sd=all.filter(function(x){return x.sold;});
       top=backBar('Profil vendeur',S.sback==='admin'&&S.isAdmin?'admin':(S.sback==='detail'&&getListing(S.pid)?'detail':'home'));
       if(S.sess&&S.sess.uid!==S.sid&&S.profReady)ensurePhone(S.sid);
-      ensureBio(S.sid);
+      ensureBio(S.sid);ensureRev(S.sid);
       if(!sl.length&&!sd.length){
         html='<div class="empty">'+ico('user')+'<h3>Aucune annonce en ligne</h3><p>Ce vendeur n’a pas d’annonce active pour le moment.</p><button class="btn" data-a="go" data-v="home">Voir les annonces</button></div>';
       }else{
@@ -1253,18 +1306,18 @@ var T0=Date.now(),splashDone=false;
         function mfmt(t){try{return new Date(t).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}catch(e){return '';}}
         if(S.since[S.sid])sinceTxt='Membre depuis '+mfmt(S.since[S.sid]);
         else{var oldest=all.map(function(x){return Date.parse(x.created);}).filter(function(n){return n>0;}).sort()[0];if(oldest)sinceTxt='Première annonce : '+mfmt(oldest);}
-        var tab=(S.stab==='sold'&&sd.length)||(!sl.length)?'sold':'on';
+        var rvOk=S.rev[S.sid]&&!S.rev[S.sid].off,tab=(S.stab==='rev'&&rvOk)?'rev':((S.stab==='sold'&&sd.length)||(!sl.length)?'sold':'on');
         var ct='';
         if(!me){
           if(!S.sess)ct='<div class="sact"><button class="btn" data-a="loginSeller">Se connecter pour contacter</button></div>';
           else if(ph&&ph!=='loading')ct='<div class="sact"><a class="btn" href="https://wa.me/228'+ph+'?text='+encodeURIComponent('Bonjour, j’ai vu votre profil sur Échango.')+'" target="_blank" rel="noopener noreferrer">Écrire sur WhatsApp</a><button class="btn ghost" data-a="copy" data-id="'+ph+'">Copier le numéro</button></div>';
           else ct='<div class="sact"><button class="btn" disabled>'+(ph===null?'Numéro indisponible':'Chargement…')+'</button></div>';
         }
-        html='<div class="sban">'+avHtml(ref.seller_avatar,sn,true)+'<h2>'+esc(sn)+(me?' <span class="mine" style="color:#fff">(vous)</span>':'')+'</h2><p>'+esc(areas.slice(0,3).join(' · ')||'Lomé')+'</p>'+(sinceTxt?'<p>'+esc(sinceTxt)+'</p>':'')+(S.bios[S.sid]?'<p class="sbio">'+esc(S.bios[S.sid]).replace(/\n/g,'<br>')+'</p>':'')+
+        html='<div class="sban">'+avHtml(ref.seller_avatar,sn,true)+'<h2>'+esc(sn)+(me?' <span class="mine" style="color:#fff">(vous)</span>':'')+'</h2><p>'+esc(areas.slice(0,3).join(' · ')||'Lomé')+'</p>'+(sinceTxt?'<p>'+esc(sinceTxt)+'</p>':'')+(rvOk&&S.rev[S.sid].n?'<p class="srate"><span class="stars" aria-hidden="true">★</span> '+rfmt(S.rev[S.sid].avg)+' · '+S.rev[S.sid].n+' avis</p>':'')+(S.bios[S.sid]?'<p class="sbio">'+esc(S.bios[S.sid]).replace(/\n/g,'<br>')+'</p>':'')+
           '<div class="sstats"><div><b>'+sl.length+'</b><span>En ligne</span></div><div><b>'+sd.length+'</b><span>Vendus</span></div><div><b>'+(sl.length+sd.length)+'</b><span>Annonces</span></div></div></div>'+ct+
           '<div class="sharerow" style="margin:0 0 6px"><a class="btn wa" href="'+esc(shareProfileHref(S.sid,sn,sl.length))+'" target="_blank" rel="noopener noreferrer">Partager ce profil</a><button class="btn ghost" data-a="copyprof">Copier le lien</button></div>'+
-          '<div class="stabs" role="group" aria-label="Annonces"><button data-a="stab" data-id="on" aria-pressed="'+(tab==='on')+'">En ligne ('+sl.length+')</button><button data-a="stab" data-id="sold" aria-pressed="'+(tab==='sold')+'">Vendus ('+sd.length+')</button></div>'+
-          (tab==='on'?'<div class="grid">'+sl.map(card).join('')+'</div>':
+          '<div class="stabs" role="group" aria-label="Annonces"'+(rvOk?' style="grid-template-columns:repeat(3,1fr)"':'')+'><button data-a="stab" data-id="on" aria-pressed="'+(tab==='on')+'">En ligne ('+sl.length+')</button><button data-a="stab" data-id="sold" aria-pressed="'+(tab==='sold')+'">Vendus ('+sd.length+')</button>'+(rvOk?'<button data-a="stab" data-id="rev" aria-pressed="'+(tab==='rev')+'">Avis ('+S.rev[S.sid].n+')</button>':'')+'</div>'+
+          (tab==='rev'?reviewsHtml(me):tab==='on'?'<div class="grid">'+sl.map(card).join('')+'</div>':
             (sd.length?'<div class="grid">'+sd.map(function(x){return '<article class="sold-card"><span class="tile t-'+x.cat+'">'+tileIn(x)+'<span class="badge">Vendu</span></span><span class="info"><span class="price">'+fmt(x.price)+'</span><span class="name">'+esc(x.title)+'</span></span></article>';}).join('')+'</div>':'<p class="muted">Aucun article vendu pour l’instant.</p>'))+
           (me?'':'<div class="srepl"><button data-a="sreport">Signaler ce vendeur</button></div>');
       }
@@ -1281,6 +1334,18 @@ var T0=Date.now(),splashDone=false;
         field('r-details','Précisions (facultatif)','<div class="ctl"><textarea id="r-details" rows="3" maxlength="300" placeholder="Que s’est-il passé ?">'+esc(S.rep.details)+'</textarea></div>')+
         (S.rep.err?'<p class="err" role="alert">'+esc(S.rep.err)+'</p>':'')+
         '<button class="btn block" type="submit"'+(S.rep.busy?' disabled':'')+'>'+(S.rep.busy?'Envoi…':'Envoyer le signalement')+'</button></form>';
+      bot='';
+    }
+    else if(v==='review'){
+      var rvn='ce vendeur',rva=(S.listings||[]).filter(function(x){return x.seller_id===S.sid;})[0];if(rva)rvn=rva.seller_name;
+      top=backBar('Donner mon avis','seller');
+      g=gate('Connectez-vous pour donner votre avis.');
+      if(g!==null)html=g;
+      else html='<p class="muted" style="margin-bottom:6px">Votre avis sur « '+esc(rvn)+' »</p>'+
+        '<form data-form="review" novalidate><div class="rstars" role="radiogroup" aria-label="Note sur 5">'+[1,2,3,4,5].map(function(i){return '<button type="button" data-a="rvstar" data-id="'+i+'" role="radio" aria-checked="'+(S.rv.rating===i)+'" aria-pressed="'+(S.rv.rating>=i)+'" aria-label="'+i+' étoile'+(i>1?'s':'')+'">★</button>';}).join('')+'</div>'+
+        field('rv-c','Votre commentaire (facultatif)','<div class="ctl"><textarea id="rv-c" rows="4" maxlength="300" placeholder="Comment s’est passée la vente ?">'+esc(S.rv.comment)+'</textarea></div>',null,'Votre prénom sera affiché avec votre avis. Soyez honnête et respectueux.')+
+        (S.rv.err?'<p class="err" role="alert">'+esc(S.rv.err)+'</p>':'')+
+        '<button class="btn block" type="submit"'+(S.rv.busy?' disabled':'')+'>'+(S.rv.busy?'Envoi…':'Publier mon avis')+'</button></form>';
       bot='';
     }
     else if(v==='sreport'){
@@ -1896,6 +1961,13 @@ var T0=Date.now(),splashDone=false;
     else if(a==='loginToContact'){S.after='detail';S.authMode='login';S.view='me';render();}
     else if(a==='retryprof'){retryProf();}
     else if(a==='rmav'){setAvatar(null);}
+    else if(a==='rvstart'){var rv0=S.rev[S.sid],m0=rv0&&(rv0.items||[]).filter(function(x){return x.mine;})[0];S.rv={rating:m0?Number(m0.rating)||0:0,comment:m0&&m0.comment||'',busy:false,err:''};S.after='review';go('review');}
+    else if(a==='rvstar'){S.rv.rating=Math.max(1,Math.min(5,+id||0));S.rv.err='';render();}
+    else if(a==='revask'){S.revAsk=id||null;render();}
+    else if(a==='revdel'){
+      var del=v==='mine'?rest('POST','/rpc/delete_my_review',{p_seller:S.sid}):rest('POST','/rpc/admin_delete_review',{p_id:id});
+      del.then(function(){S.revAsk=null;delete S.rev[S.sid];toast('Avis supprimé');render();}).catch(function(){toast('Suppression impossible.');});
+    }
     else if(a==='sreport'){if(S.sess&&S.sess.uid===S.sid)return;S.srep={reason:'',details:'',busy:false,err:''};S.after='sreport';go('sreport');}
     else if(a==='srepview'){if(!UUID.test(id))return;S.stab='on';S.sid=id.toLowerCase();S.sback='admin';S.sbackPid=null;S.from='home';go('seller');fetchSellerListings(S.sid);}
     else if(a==='srepask'){S.adm.sconf={id:id,kind:v};render();}
@@ -1932,7 +2004,7 @@ var T0=Date.now(),splashDone=false;
   $('#app').addEventListener('submit',function(e){
     e.preventDefault();
     var k=e.target.dataset&&e.target.dataset.form;
-    if(k==='auth')doAuth();else if(k==='profile')saveProf();else if(k==='forgot')doForgot();else if(k==='reset')doReset();else if(k==='report')doReport();else if(k==='sreport')doSReport();
+    if(k==='auth')doAuth();else if(k==='profile')saveProf();else if(k==='forgot')doForgot();else if(k==='reset')doReset();else if(k==='report')doReport();else if(k==='sreport')doSReport();else if(k==='review')doReview();
   });
   $('#app').addEventListener('input',function(e){
     var t=e.target,id=t.id;
@@ -1949,6 +2021,7 @@ var T0=Date.now(),splashDone=false;
     else if(id==='p-area')S.pf.area=t.value;
     else if(id==='p-bio')S.pf.bio=t.value;
     else if(id==='sr-details')S.srep.details=t.value;
+    else if(id==='rv-c')S.rv.comment=t.value;
     else if(id==='an-t')S.anf.t=t.value;
     else if(id==='an-b')S.anf.b=t.value;
     else if(id==='d-conf'){S.delTxt=t.value;var gb=document.getElementById('d-go');if(gb)gb.disabled=!(t.value.trim().toUpperCase()==='SUPPRIMER'&&!S.busy);}
