@@ -326,6 +326,11 @@ html[data-xmas] #xmas{display:block}
 .rstars{display:flex;gap:6px;justify-content:center;margin:6px 0 4px}
 .rstars button{font-size:38px;line-height:1;color:var(--line);padding:2px 4px;min-width:44px;min-height:48px}
 .rstars button[aria-pressed="true"]{color:#F5A623}
+#shs{position:absolute;inset:0;z-index:65;background:rgba(8,15,30,.5);display:flex;align-items:flex-end;animation:spFade .18s ease both}
+#shs .sp{width:100%;background:var(--bg,#fff);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:grid;gap:10px;animation:spUp .22s ease both;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+#shs h3{margin:0;font-size:18px;font-family:var(--display)}
+#shs .lk{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--surface);color:var(--muted);font-size:13px}
+#shs .btn{width:100%;text-align:center}
 .nbell{position:relative;margin-left:auto;flex:none}
 .nbadge{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;box-sizing:border-box;line-height:1;pointer-events:none}
 .nbell svg.i{width:24px;height:24px}
@@ -933,9 +938,7 @@ var T0=Date.now(),splashDone=false;
     document.querySelectorAll('.hdots button').forEach(function(el,i){el.setAttribute('aria-current',String(i===S.ban));});
   }
   function shareApp(){
-    var url=location.origin+location.pathname,text='Découvre Échango : achète et vends près de chez toi, gratuitement.';
-    if(navigator.share){navigator.share({title:'Échango',text:text,url:url}).catch(function(){});}
-    else{window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank','noopener');}
+    openShare({label:'Partager Échango',title:'Échango',text:'Découvre Échango : achète et vends près de chez toi, gratuitement.',url:location.origin+location.pathname});
   }
   function remindersHtml(){
     var m=mineList().filter(function(x){return !x.sold;}),out=[];
@@ -1469,11 +1472,29 @@ var T0=Date.now(),splashDone=false;
     },380);
   }
   var ptrBusy=false;
+  function copyTxt(t,okMsg){
+    function fb(){try{var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);var ok=document.execCommand('copy');document.body.removeChild(ta);toast(ok?okMsg:'Copie impossible : appuyez longtemps sur le lien');}catch(e){toast('Copie impossible : appuyez longtemps sur le lien');}}
+    try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast(okMsg);},fb);return;}}catch(e){}
+    fb();
+  }
+  function closeShare(){var e=$('#shs');if(e&&e.parentNode)e.parentNode.removeChild(e);}
+  function openShare(o){
+    closeShare();
+    var el=document.createElement('div');el.id='shs';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label',o.label||'Partager');
+    el.innerHTML='<div class="sp"><h3>'+esc(o.label||'Partager')+'</h3><a class="btn wa" id="shw" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text='+encodeURIComponent(o.text+'\n'+o.url)+'">Envoyer sur WhatsApp</a><button class="btn ghost" id="shc" type="button">Copier le lien</button>'+(navigator.share?'<button class="btn ghost" id="sho" type="button">Autres applications…</button>':'')+'<input class="lk" id="shl" readonly aria-label="Lien" value="'+esc(o.url)+'"><button class="btn ghost" id="shx" type="button">Fermer</button></div>';
+    $('#app').appendChild(el);
+    el.addEventListener('click',function(e){if(e.target===el)closeShare();});
+    el.querySelector('#shx').addEventListener('click',closeShare);
+    el.querySelector('#shw').addEventListener('click',function(){setTimeout(closeShare,300);});
+    el.querySelector('#shc').addEventListener('click',function(){copyTxt(o.url,'Lien copié');closeShare();});
+    var so=el.querySelector('#sho');if(so)so.addEventListener('click',function(){navigator.share({title:o.title,text:o.text,url:o.url}).catch(function(){});closeShare();});
+    el.querySelector('#shl').addEventListener('focus',function(){var i=this;setTimeout(function(){try{i.select();i.setSelectionRange(0,i.value.length);}catch(e){}},0);});
+    el.addEventListener('keydown',function(e){if(e.key==='Escape')closeShare();});
+    el.querySelector('#shw').focus();
+  }
   function shareOne(id){
     var p=getListing(id);if(!p)return;
-    var url=shareUrl(p),text=p.title+' – '+fmt(p.price)+' sur Échango';
-    if(navigator.share){navigator.share({title:p.title,text:text,url:url}).catch(function(){});}
-    else{window.open(shareHref(p),'_blank','noopener');}
+    openShare({label:'Partager cette annonce',title:p.title,text:'Regarde cette annonce sur Échango : '+p.title+' – '+fmt(p.price)+(p.loc?' ('+p.loc+')':''),url:shareUrl(p)});
   }
   var lb=null;
   function lbClose(fromPop){
@@ -1948,7 +1969,7 @@ var T0=Date.now(),splashDone=false;
       if(!UUID.test(id))return;
       S.stab='on';S.sid=id.toLowerCase();S.sback=S.view==='detail'?'detail':'home';S.sbackPid=S.view==='detail'?S.pid:null;S.from='home';go('seller');fetchSellerListings(S.sid);
     }
-    else if(a==='copyprof'){try{navigator.clipboard.writeText(sellerUrl(S.sid)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}
+    else if(a==='copyprof'){copyTxt(sellerUrl(S.sid),'Lien copié');}
     else if(a==='open'){
       if(!UUID.test(id))return;
       S.from=S.view==='seller'?'seller':'home';S.pid=id;S.phIdx=0;S.confirmDel=false;S.after=null;
@@ -1980,7 +2001,7 @@ var T0=Date.now(),splashDone=false;
     else if(a==='dcond'){S.draft.cond=id;render();}
     else if(a==='delph'){var r=S.draft.photos.splice(+id,1)[0];if(r)URL.revokeObjectURL(r.url);render();}
     else if(a==='publish'){publish();}
-    else if(a==='copylink'){var lk=getListing(id);if(lk){try{navigator.clipboard.writeText(shareUrl(lk)).then(function(){toast('Lien copié');},function(){toast('Copie impossible');});}catch(err){toast('Copie impossible');}}}
+    else if(a==='copylink'){var lk=getListing(id);if(lk)copyTxt(shareUrl(lk),'Lien copié');}
     else if(a==='copy'){if(S.pid&&S.view==='detail')evTrack(S.pid,'contact');try{navigator.clipboard.writeText('+228'+id).then(function(){toast('Numéro copié');},function(){toast('Copie impossible, sélectionnez le numéro');});}catch(err){toast('Copie impossible, sélectionnez le numéro');}}
     else if(a==='edit'){startEdit(id);}
     else if(a==='saveedit'){saveEdit();}
