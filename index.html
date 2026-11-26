@@ -514,7 +514,7 @@ html[data-xmas] #xmas{display:block}
   var S={view:'home',news:null,ban:0,banAt:0,anf:{t:'',b:''},anAsk:null,anBusy:false,cat:'all',q:'',fOpen:false,editId:null,draftSaved:null,isAdmin:false,adm:{data:null,loading:false,err:'',sel:null},favs:{},favsReady:false,lback:'me',sid:null,sback:'home',sbackPid:null,from:'home',sort:'new',cond:'all',pmin:'',pmax:'',fcity:'',farea:'',listings:null,loadErr:false,pid:null,phIdx:0,confirmDel:false,
     sess:null,prof:null,profReady:false,since:{},stab:'on',after:null,
     authMode:'login',af:{email:'',password:'',name:'',phone:'',area:'',terms:false},authErr:'',authMsg:'',busy:false,
-    pf:{name:'',phone:'',area:'',bio:''},pfErr:{},bios:{},rev:{},rv:{rating:0,comment:'',busy:false,err:''},revAsk:null,srep:{reason:'',details:'',busy:false,err:''},xmas:false,
+    pf:{name:'',phone:'',area:'',bio:''},pfErr:{},bios:{},rev:{},rvw:{rating:0,comment:'',busy:false,err:''},revAsk:null,srep:{reason:'',details:'',busy:false,err:''},xmas:false,
     draft:null,derr:{},sellErr:'',phones:{},theme:'auto',
     rep:{reason:'',details:'',busy:false,err:''},rv:{pw:'',pw2:'',busy:false,err:''}};
   var SREASONS=[['arnaque','Arnaque ou demande d’argent à l’avance'],['abus','Comportement abusif ou harcèlement'],['faux','Faux profil ou usurpation d’identité'],['autre','Autre raison']];
@@ -758,12 +758,12 @@ var T0=Date.now(),splashDone=false;
     return h;
   }
   function doReview(){
-    var r=S.rv;if(r.busy)return;
+    var r=S.rvw;if(r.busy)return;
     if(!S.sess||!S.sid)return;
     if(!(r.rating>=1)){r.err='Choisissez une note de 1 à 5 étoiles.';render();return;}
     r.busy=true;r.err='';render();
     rest('POST','/rpc/submit_seller_review',{p_seller:S.sid,p_rating:r.rating,p_comment:(r.comment||'').trim()||null}).then(function(){
-      delete S.rev[S.sid];S.rv={rating:0,comment:'',busy:false,err:''};S.stab='rev';go('seller');toast('Merci pour votre avis !');
+      delete S.rev[S.sid];S.rvw={rating:0,comment:'',busy:false,err:''};S.stab='rev';go('seller');toast('Merci pour votre avis !');
     }).catch(function(e){r.busy=false;r.err=errMsg(e);render();});
   }
   function ensureBio(sid){
@@ -1345,10 +1345,10 @@ var T0=Date.now(),splashDone=false;
       g=gate('Connectez-vous pour donner votre avis.');
       if(g!==null)html=g;
       else html='<p class="muted" style="margin-bottom:6px">Votre avis sur « '+esc(rvn)+' »</p>'+
-        '<form data-form="review" novalidate><div class="rstars" role="radiogroup" aria-label="Note sur 5">'+[1,2,3,4,5].map(function(i){return '<button type="button" data-a="rvstar" data-id="'+i+'" role="radio" aria-checked="'+(S.rv.rating===i)+'" aria-pressed="'+(S.rv.rating>=i)+'" aria-label="'+i+' étoile'+(i>1?'s':'')+'">★</button>';}).join('')+'</div>'+
-        field('rv-c','Votre commentaire (facultatif)','<div class="ctl"><textarea id="rv-c" rows="4" maxlength="300" placeholder="Comment s’est passée la vente ?">'+esc(S.rv.comment)+'</textarea></div>',null,'Votre prénom sera affiché avec votre avis. Soyez honnête et respectueux.')+
-        (S.rv.err?'<p class="err" role="alert">'+esc(S.rv.err)+'</p>':'')+
-        '<button class="btn block" type="submit"'+(S.rv.busy?' disabled':'')+'>'+(S.rv.busy?'Envoi…':'Publier mon avis')+'</button></form>';
+        '<form data-form="review" novalidate><div class="rstars" role="radiogroup" aria-label="Note sur 5">'+[1,2,3,4,5].map(function(i){return '<button type="button" data-a="rvstar" data-id="'+i+'" role="radio" aria-checked="'+(S.rvw.rating===i)+'" aria-pressed="'+(S.rvw.rating>=i)+'" aria-label="'+i+' étoile'+(i>1?'s':'')+'">★</button>';}).join('')+'</div>'+
+        field('rv-c','Votre commentaire (facultatif)','<div class="ctl"><textarea id="rv-c" rows="4" maxlength="300" placeholder="Comment s’est passée la vente ?">'+esc(S.rvw.comment)+'</textarea></div>',null,'Votre prénom sera affiché avec votre avis. Soyez honnête et respectueux.')+
+        (S.rvw.err?'<p class="err" role="alert">'+esc(S.rvw.err)+'</p>':'')+
+        '<button class="btn block" type="submit"'+(S.rvw.busy?' disabled':'')+'>'+(S.rvw.busy?'Envoi…':'Publier mon avis')+'</button></form>';
       bot='';
     }
     else if(v==='sreport'){
@@ -1852,7 +1852,7 @@ var T0=Date.now(),splashDone=false;
     S.authErr='';S.authMsg='';
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){S.authErr='Entrez une adresse e-mail valide.';render();return;}
     S.busy=true;render();
-    http(SB+'/auth/v1/recover',{method:'POST',headers:hdr({'Content-Type':'application/json'}),body:JSON.stringify({email:email})}).then(function(){
+    http(SB+'/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',headers:hdr({'Content-Type':'application/json'}),body:JSON.stringify({email:email})}).then(function(){
       S.busy=false;S.authMsg='Si un compte existe avec cette adresse, un e-mail vient d’être envoyé. Ouvrez-le et touchez le lien (regardez aussi dans les spams).';render();
     }).catch(function(e){S.busy=false;S.authErr=errMsg(e);render();});
   }
@@ -1982,8 +1982,8 @@ var T0=Date.now(),splashDone=false;
     else if(a==='loginToContact'){S.after='detail';S.authMode='login';S.view='me';render();}
     else if(a==='retryprof'){retryProf();}
     else if(a==='rmav'){setAvatar(null);}
-    else if(a==='rvstart'){var rv0=S.rev[S.sid],m0=rv0&&(rv0.items||[]).filter(function(x){return x.mine;})[0];S.rv={rating:m0?Number(m0.rating)||0:0,comment:m0&&m0.comment||'',busy:false,err:''};S.after='review';go('review');}
-    else if(a==='rvstar'){S.rv.rating=Math.max(1,Math.min(5,+id||0));S.rv.err='';render();}
+    else if(a==='rvstart'){var rv0=S.rev[S.sid],m0=rv0&&(rv0.items||[]).filter(function(x){return x.mine;})[0];S.rvw={rating:m0?Number(m0.rating)||0:0,comment:m0&&m0.comment||'',busy:false,err:''};S.after='review';go('review');}
+    else if(a==='rvstar'){S.rvw.rating=Math.max(1,Math.min(5,+id||0));S.rvw.err='';render();}
     else if(a==='revask'){S.revAsk=id||null;render();}
     else if(a==='revdel'){
       var del=v==='mine'?rest('POST','/rpc/delete_my_review',{p_seller:S.sid}):rest('POST','/rpc/admin_delete_review',{p_id:id});
@@ -2042,7 +2042,7 @@ var T0=Date.now(),splashDone=false;
     else if(id==='p-area')S.pf.area=t.value;
     else if(id==='p-bio')S.pf.bio=t.value;
     else if(id==='sr-details')S.srep.details=t.value;
-    else if(id==='rv-c')S.rv.comment=t.value;
+    else if(id==='rv-c')S.rvw.comment=t.value;
     else if(id==='an-t')S.anf.t=t.value;
     else if(id==='an-b')S.anf.b=t.value;
     else if(id==='d-conf'){S.delTxt=t.value;var gb=document.getElementById('d-go');if(gb)gb.disabled=!(t.value.trim().toUpperCase()==='SUPPRIMER'&&!S.busy);}
